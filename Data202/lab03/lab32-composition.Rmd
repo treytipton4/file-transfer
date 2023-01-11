@@ -1,0 +1,96 @@
+---
+title: "Lab 3.2 - Visualization Composition"
+author: "Trey Tipton"
+date: "Fall 2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r message = FALSE, warning = FALSE}
+library(tidyverse)
+library(scales)
+library(gapminder)
+```
+
+This document presents some modifications on the health-and-wealth plot.
+
+## Rebuilding the Health-and-Wealth Plot
+
+```{r health-and-wealth}
+# Start with the dataset from the GapMinder package.
+gapminder %>% 
+  # Include only the records where the year is 2007
+  filter(year == 2007)%>% 
+  # Create the plot
+  ggplot() +
+  # Set the axes to GDP per Capita by Life Expectancy
+  aes(x = gdpPercap, y = lifeExp) +
+  # Create the points, each being of size .8
+  geom_point(alpha = .8) + 
+  # Distinguish the points by color representing Continent
+  aes(color = continent) +
+  # Change the size of the points by population
+  aes(size = pop) + 
+  # Scale the x axis on a logarithmic scale, splitting by 400, 4000, and 40000
+  scale_x_continuous(
+    breaks = c(400, 4000, 40000),
+    trans = "log10") +
+  # Create the label for x axis: GDP per Capita
+  labs(x = "GDP per Capita") +
+  # Create the label for y axis: Life Expectancy (years)
+  labs(y = "Life Expectancy (years)") +
+  # Create the label for color: Continent
+  labs(color = "Continent") +
+  # Create the label for size: Population
+  labs(size = "Population") +
+  # Scales area
+  scale_size_area(labels = label_comma()) +
+  # Make the background for the graph white
+  theme_bw() +
+  # Add annotation logsticks on the x axis
+  annotation_logticks(sides = "b")
+```
+
+
+
+## Modifying the Health-and-Wealth Plot
+
+Here is a modified version of the previous plot.
+
+```{r more-health-and-wealth}
+# Start with the dataset from the GapMinder package.
+gapminder %>% 
+  # Include only the records where the year is 1967
+  filter(year == 1967)%>% 
+  # Create the plot
+  ggplot() +
+  # Set the axes to GDP per Capita by Life Expectancy
+  aes(x = gdpPercap, y = lifeExp) +
+  # Create the points, each being of size .8
+  geom_point(alpha = .8) + 
+  # Distinguish the points by color representing Continent and size representing population
+  aes(color = continent, size = pop) +
+  # Scale the x axis on a logarithmic scale, splitting by 400, 4000, and 40000
+  scale_x_continuous(
+    breaks = c(400, 4000, 40000),
+    labels = label_comma(),
+    trans = "log10") +
+  # Change y axis scale to 40 through 90
+  coord_cartesian(ylim = c(40, 90)) +
+  # Create the label for x axis, y axis, color, and size
+  labs(x = "GDP per Capita", y = "Life Expectancy (years)", color = "Continent", size = "Population") +
+  # Scales area
+  scale_size_area(labels = label_comma()) +
+  # Make the background for the graph white
+  theme_minimal() +
+  theme_classic() +
+  theme_dark() +
+  # Add annotation logsticks on the x axis
+  annotation_logticks(sides = "b")
+```
+
+
+<!-- Based on: https://cs.calvin.edu/courses/data/202/21fa/ex/ex02/ex02-plotting-inst.html -->

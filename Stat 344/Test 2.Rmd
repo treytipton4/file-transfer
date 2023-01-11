@@ -1,0 +1,214 @@
+---
+title: "Stat 344 -- Test 2"
+author: "Trey Tipton"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output: 
+  pdf_document:
+    fig_height: 2.2
+    fig_width: 4
+  html_document:
+    fig_height: 2.2
+    fig_width: 4
+  word_document:
+    fig_height: 2.2
+    fig_width: 4
+---
+
+```{r, setup, include = FALSE}
+# load packages that are going to be used
+require(fastR2)   # this loads mosaic, ggformula, etc. too
+
+# Some customization.  You can alter or delete as desired (if you know what you are doing).
+
+theme_set(theme_bw())     # change theme for ggplot2/ggformula
+
+knitr::opts_chunk$set(
+  tidy = FALSE,     # display code as typed (rather than reformatted)
+  size = "small")   # slightly smaller font for code
+require(maxLik)
+```
+
+
+<!-- Some macros to make mathematics easier -->
+
+\newcommand{\Prob}{\mathrm{P}}
+\newcommand{\intersect}{\;\cap\;}
+\newcommand{\union}{\operatorname{\cup}}
+\newcommand{\E}{\operatorname{E}}
+\newcommand{\Var}{\operatorname{Var}}
+\newcommand{\SD}{\operatorname{SD}}
+
+<!-- Put your work below here.  Put text in text chunks, code in R chunks. -->
+
+```{r}
+wrld <- read.csv('https://sldr.netlify.app/data/sustainable-tanzania.csv')
+```
+
+### Categories, Categories
+
+```{r}
+tally( ~ Age_Group + Own_Land, data = wrld)
+```
+
+Hypotheses:
+
+$H_0: \Omega_0 =${$\pi | \pi_{ij} \geq 0$ and $\sum_{i,j} \pi_{ij} = 1$}, 
+
+Age group and Owning Land are independent. Knowing the age group does not help to know whether they own land.
+
+$H_a: \Omega_0 =${$\pi | \pi_{ij} = \pi_{i.} \pi_{j.}$ and $\sum_{i} \pi_{i.} = \sum_{j} \pi_{.j} = 1$}, 
+
+Age group and Owning Land relate to each other, knowing the age group helps to know whether they own land.
+
+Test Statistic:
+
+$\chi^2 = \sum_{i,j} \frac{(o_{ij} - e_{ij})^2}{e_{ij}}$
+
+```{r}
+chisq.test(wrld$Age_Group, wrld$Own_Land)
+```
+Our $\chi^2$ test statistic came out to be 7.9218.
+
+At a low p-value of 0.01905, we reject the null hypothesis and can say that there is some sort of association between age group and owning land, and they are not independent.
+
+The test we just carried out relies on the fact that $G = \chi^2$, which becomes more accurate as n gets larger. Because we have a few bins with low values, we do have a reason to suspect that our test may not hold.
+
+```{r}
+set.seed(032601)
+n_sim = 10000
+sims <- do(4)*chisq.test(wrld$Age_Group, wrld$Own_Land, simulate.p.value = TRUE, B = n_sim)
+
+sims$p.value
+```
+The p-values are 0.018, 0.0195, 0.192, and 0.0185.
+
+Using simulations, the p-values we got surround the p-value we got from the original chi-squared test. Each p-value still leads to a rejection in the null hypothesis. 
+
+We can now conclude that although some bins have low values, our p-value is still accurate because our simulations gave us p-values similar to and above and below our original p-value.
+
+### Testing, Testing
+
+```{r}
+gf_dhistogram(~Proportion_New_Assets, data = wrld)
+```
+
+
+
+```{r}
+LL <- function(theta, x){
+  mu <- theta[1]
+  sigma <- theta[2]
+  if (mu < 0) return(NA)
+  if (sigma < 0) return(NA)
+  dnorm(x, mean = mu, sd = sigma, log = TRUE)
+}
+
+maxLik(LL, start = c(mean = .5, sd = .25), x = wrld$Proportion_New_Assets)
+
+mu <- 0.4614054
+sigma <- 0.1945719
+```
+Using maximum-likelihood estimation, I chose to fit a normal distribution to the data for Proportion of New Assets. The resulting parameter estimates are $\mu = 0.4614054$ and $\sigma = 0.1945719$.
+
+We can now carry out a Goodness of Fit test for the model we just fitted:
+
+Hypotheses:
+
+$H_0: \Omega_0 =${$\theta | \mu \geq 0, \sigma \geq 0$}, 
+
+A normal distribution generates the data for the Proportion of New Assets.
+
+
+$H_a:$ A normal distribution does not generate the data for the Proportion of New Assets.
+
+Test Statistic:
+
+$G = -2 * log(\lambda)$ = $2 * \sum o_i * log(\frac{o_i}{e_i})$
+
+
+```{r}
+
+bins <- c(-.1, .2, .3, .4, .5, .6, .7, .8, Inf)
+wrld <- wrld %>%
+  mutate(binned = cut(wrld$Proportion_New_Assets, breaks = bins))
+
+tally(~binned, data = wrld)
+
+count_dat <- data.frame(tally(~binned, data = wrld))
+count_dat
+
+count_dat <- count_dat %>%
+  mutate(probs = diff(pnorm(bins, mean = mu, sd = sigma)),
+  e = sum(count_dat$Freq) * probs )
+
+count_dat
+
+
+G <- 2 * sum( count_dat$Freq * log( count_dat$Freq / count_dat$e))
+G
+
+1 - pchisq(G, df = nrow(count_dat) -1 -2)
+```
+
+Our sample statistic  is G = 7.730431. Using k-1-m degrees of freedom, we got a p-value of 0.1717312.
+
+With a p-value of 0.17 we fail to reject the null hypothesis that a normal distribution generated this data. Therefore, we conclude that it is plausible for the Proportion of New Assets to have been generated from a normal distribution.
+
+```{r}
+gf_dhistogram(~Proportion_New_Assets, data = wrld)%>%
+  gf_dist(dist = "norm", params = list(mean = 0.4614054, sd = 0.1945719))
+```
+
+
+The overlayed pdf (see above) on the histogram is consistent with our hypothesis test results. It is not perfect, but the data seems to be somewhat normal and it is plausible that our data was generated by that distribution, and our p-value of 0.17 communicates the same idea.
+
+
+
+### Just Testing
+
+Since we just failed to reject that a normal distribution generated the data for the Proportion of New Assets, I have decided to use this variable. It seems that about half of the people's assets are "new", so I will be testing whether the mean is .5 with unknown standard deviation.
+
+Hypotheses:
+
+$\theta = <\mu, \sigma>$
+
+$H_0: \Omega_0 =${$\theta | \mu = .5, \sigma \geq 0$}, 
+
+The proportion of new assets has a normal distribution with a mean of 0.5.
+
+$H_a: \Omega_0 =${$\theta | 0 \leq \mu \geq 1, \sigma \geq 0$},
+
+The proportion of new assets has a normal distribution, but not with a mean of 0.5.
+
+```{r}
+ll_norm <- function(theta, x){
+  mu <- theta[1]
+  sigma <- theta[2]
+  if (mu < 0) return(NA)
+  if (sigma < 0) return(NA)
+  sum(log(dnorm(x, mean = mu, sd = sigma)))
+}
+
+
+maxLik(logLik = ll_norm, start = c(mu = .5, sigma = 1), x = wrld$Proportion_New_Assets)
+maxLik(logLik = ll_norm, start = c(mu = .5, sigma = 1), fixed = 1, x = wrld$Proportion_New_Assets)
+
+
+W <- 2*(18.96732 - 17.28861)
+W
+1 - pchisq(W, 1)
+```
+Test Statistic:
+
+$\lambda = \frac{L(\Omega_0)}{L(\hat\Omega)}$ 
+and $W = -2 * log(\lambda)$ = $2 * (l(\hat\Omega) - l(\Omega_0))$ = 2 * (18.96732 - 17.28861) = 3.35742
+
+p-value and conclusion:
+
+From 1 - pchisq(W, 1), using df = 1 since $dim(\hat\Omega) - dim(\Omega_0)$ = 2 - 1 = 1, we get a p-value of 0.06690281.
+
+With a p-value of 0.067 and a significance level of $\alpha = 0.05$, we fail to reject the null hypothesis that the mean proportion of new assets is 0.5. Although the p-value is still relatively low, there is not enough evidence to say that the true proportion of new assets data does not come from a normal distribution with a mean of 0.5.
+
+
+
+

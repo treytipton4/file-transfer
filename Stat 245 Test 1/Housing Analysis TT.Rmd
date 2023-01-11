@@ -1,0 +1,94 @@
+---
+title: "Stat 245 -- Housing Analysis"
+author: "Trey Tipton"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output: 
+  pdf_document:
+    fig_height: 2.2
+    fig_width: 7
+  html_document:
+    fig_height: 2.2
+    fig_width: 4
+  word_document:
+    fig_height: 2.2
+    fig_width: 4
+---
+
+```{r, setup, include = FALSE}
+# load packages that are going to be used
+require(tidyverse)   # this loads mosaic, ggformula, etc. too
+require(ggformula)
+require(mosaic)
+
+# Some customization.  You can alter or delete as desired (if you know what you are doing).
+
+theme_set(theme_bw(base_size=12))     # change theme for ggplot2/ggformula
+
+knitr::opts_chunk$set(
+  echo = TRUE,      # for homework, always show R code (this is the default)
+  tidy = FALSE,     # display code as typed (rather than reformatted)
+  size = "small",   # slightly smaller font for code
+  message = FALSE, warning = FALSE) # don't print warnings or messages in compiled document. So you MUST check them in RStudio!
+```
+
+
+<!-- Put your work below here.  Put text in text chunks, code in R chunks. -->
+
+```{r}
+hdma_mi_20 <- read_csv('https://sldr.netlify.app/data/hdma-mi-20.csv')
+```
+### Choose Response and Predictors
+
+The first variable I chose as a predictor is race, for this is the main variable of interest as to possible biases for mortgage loan acceptance. Other things that might affect our response variable of 'action_taken' are income, the amount of the loan, and Debt-to-Income Ratio. The Markup mentioned these as well as showing graphics of the debt-to-income ratio, so I believe it would be an interesting variable to look at.
+
+### Fixing Variable Labels and Names
+```{r}
+
+hdma_mi_20 <- hdma_mi_20 %>%
+  mutate(derived_race = case_when(derived_race == "Free Form Text Only" ~ "Other", 
+                                  derived_race == "Joint" ~ "Other", 
+                                  derived_race == "2 or more minority races" ~ "Multiracial", 
+                                  derived_race == "White" ~ "White", 
+                                  derived_race == "Black or African American" ~ "Black", derived_race == "Asian" ~ "Asian", 
+                                  derived_race == "Native Hawaiian or Other Pacific Islander" ~ "Pacific", 
+                                  derived_race == "American Indian or Alaska Native" ~ "Native American", 
+                                  TRUE ~ "Other"))%>%
+  filter(derived_race != "Race Not Available")
+
+
+
+
+```
+
+### Fit Model
+```{r}
+housing_model <- glm(factor(action_taken) ~ derived_race
+                     + income + debt_to_income_ratio
+                     + loan_amount, data = hdma_mi_20,
+                     family = binomial(link = 'logit'))
+
+summary(housing_model)
+```
+
+### Check Conditions
+Independence Condition
+```{r}
+s245::gf_acf(~housing_model)%>%
+  gf_lims(y = c(-1,1))
+```
+I believe that this model does not pass the independence condition, as the range is so small it can hardly be seen. Albeit, the Residual ACF values are outside of the allowed range. 
+
+### Prediction Plot
+
+```{r}
+require(s245)
+
+get_fixed(housing_model)
+
+pred_plot(housing_model, 'derived_race', data = hdma_mi_20)%>%
+  gf_labs(y = "Proportion Denied", x = "Race")
+```
+The prediction plot does seem consistent with The Markup's nationwide analysis. Minorities that apply for mortgage loans are clearly denied at a higher rate.
+
+
+  

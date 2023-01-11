@@ -1,0 +1,82 @@
+---
+title: "Lab 2.1 - The MPG Dataset<sup>*</sup>"
+author: "Trey Tipton"
+date: "Fall 2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+In this document, we explore the MPG dataset provided in the TidyVerse package. It will follow the model of the lab 1.2 exploration of the Seattle Pets dataset.
+
+## Loading the MPG Dataset
+
+```{r}
+library(tidyverse)
+summary(mpg)
+```
+
+This data set tells us the miles per gallon in the city and highway of certain vehicles along with other details about them.
+
+[mpg hyperlink](https://ggplot2.tidyverse.org/reference/mpg.html)
+
+
+## Reading and Writing Files
+
+```{r}
+mpg <- mpg %>%
+  write_csv("data/mpg.csv")
+```
+
+Reading in the csv:
+
+```{r}
+mpg_data <- read_csv("data/mpg.csv")
+summary(mpg_data)
+```
+
+As far as I can see, the csv version of this data set is identical, as it should be.
+
+## Including Images
+
+![](https://cs.calvin.edu/courses/info/601/resources/images/rmarkdown-logo.png)
+
+## Using Equations and Inline Code
+
+RMarkdown also allows us to include equations and inline code computations. For example, Einstein's famous equation, $e = mc^2$, tells us that given the speed of light (29979245800 cm/second), the energy stored in a mass of 1 gram is: `r 1 * 29979245800**2`. (Yep, that's a pretty big number.)
+
+The average city mpg is `r mean(mpg_data$cty)`,
+The average highway mpg is `r mean(mpg_data$hwy)`.
+
+## Using the Intermediate Data Types
+
+This document has already includes Tibbles (e.g., `mpg`), a particularly useful version of the standard data frame used to store datasets. The other data types we'll use in the course include Dates and Factors.
+
+A *date* is a special type used to represent date-times. For example, it is currently `r lubridate::now()`. Dates can be manipulated using the `lubridate` package.
+
+```{r}
+date <- lubridate::make_date(year = mpg$year)
+```
+
+
+A *factor* is a special type of *vector* used to represent categorical data values. For example, though the drive variable in the MPG dataset is represented as a character, it's probably best seen as a value from a short list of possible categories: 'f', '4', ...
+
+```{r}
+drv <- as.factor(mpg$drv)
+```
+
+The values for this variable are 'f', '4', and 'r', standing for front-wheel, 4-wheel, and rear-wheel drive respectively.
+
+## Exploring the Data
+```{r}
+mpg %>% 
+  count(class, sort = TRUE)
+```
+
+The type of car that shows up the most in the data set is SUV, and the least being a 2seater.
+
+<hr>
+
+<sup>\*</sup>Exercise based on [Data Science in a Box](https://datasciencebox.org/)

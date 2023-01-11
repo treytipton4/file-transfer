@@ -1,0 +1,359 @@
+---
+title: "Stat 344 -- HW 8"
+author: "Trey Tipton"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output: 
+  pdf_document:
+    fig_height: 2.2
+    fig_width: 4
+  html_document:
+    fig_height: 2.2
+    fig_width: 4
+  word_document:
+    fig_height: 2.2
+    fig_width: 4
+---
+
+```{r, setup, include = FALSE}
+# load packages that are going to be used
+require(fastR2)   # this loads mosaic, ggformula, etc. too
+
+# Some customization.  You can alter or delete as desired (if you know what you are doing).
+
+theme_set(theme_bw())     # change theme for ggplot2/ggformula
+
+knitr::opts_chunk$set(
+  tidy = FALSE,     # display code as typed (rather than reformatted)
+  size = "small")   # slightly smaller font for code
+
+require(fastR2)
+
+require(faraway)
+```
+
+
+<!-- Some macros to make mathematics easier -->
+
+\newcommand{\Prob}{\mathrm{P}}
+\newcommand{\intersect}{\;\cap\;}
+\newcommand{\union}{\operatorname{\cup}}
+\newcommand{\E}{\operatorname{E}}
+\newcommand{\Var}{\operatorname{Var}}
+\newcommand{\SD}{\operatorname{SD}}
+
+<!-- Put your work below here.  Put text in text chunks, code in R chunks. -->
+
+### Problem 6.33
+a.)
+```{r}
+model1 <- lm(y1 ~ x1, data = anscombe)
+msummary(model1)
+```
+
+
+```{r}
+model2 <- lm(y2 ~ x2, data = anscombe)
+msummary(model2)
+```
+
+```{r}
+model3 <- lm(y3 ~ x3, data = anscombe)
+msummary(model3)
+```
+
+```{r}
+model4 <- lm(y4 ~ x4, data = anscombe)
+msummary(model4)
+```
+All four models are fairly similar and have slope and intercept estimates that are close to one another.
+
+
+b.)
+Model 1:
+```{r}
+anscombe <- anscombe %>%
+  mutate(preds = predict(model1), resids = resid(model1))
+```
+
+Residuals vs. Fitted Plot
+```{r}
+gf_point(resids ~ preds, data = anscombe)
+```
+
+Histogram of Residuals
+```{r}
+gf_histogram(~resids, data = anscombe)
+```
+
+ACF Plot
+```{r}
+s245::gf_acf(~model1) %>%
+  gf_lims(y = c(-1, 1))
+```
+
+For model one, the residuals seem to be scattered randomly and the histogram of residuals seems to be normal. This model seems to pass these conditions.
+
+
+Model 2:
+```{r}
+anscombe <- anscombe %>%
+  mutate(preds2 = predict(model2), resids2 = resid(model2))
+```
+
+Residuals vs. Fitted Plot
+```{r}
+gf_point(resids2 ~ preds2, data = anscombe)
+```
+
+Histogram of Residuals
+```{r}
+gf_histogram(~resids2, data = anscombe)
+```
+
+ACF Plot
+```{r}
+s245::gf_acf(~model2) %>%
+  gf_lims(y = c(-1, 1))
+```
+
+For model two, the residuals are not scattered randomly and the histogram of residuals is not normal. The ACF is okay, but the others make it clear that this model does not pass the conditions.
+
+Model 3:
+```{r}
+anscombe <- anscombe %>%
+  mutate(preds3 = predict(model3), resids3 = resid(model3))
+```
+
+Residuals vs. Fitted Plot
+```{r}
+gf_point(resids3 ~ preds3, data = anscombe)
+```
+
+Histogram of Residuals
+```{r}
+gf_histogram(~resids3, data = anscombe)
+```
+
+ACF Plot
+```{r}
+s245::gf_acf(~model3) %>%
+  gf_lims(y = c(-1, 1))
+```
+
+Once again, the ACF plot is okay, but the residuals are not scattered randomly and the histogram of residuals is not normal.
+
+Model 4:
+```{r}
+anscombe <- anscombe %>%
+  mutate(preds4 = predict(model4), resids4 = resid(model4))
+```
+
+Residuals vs. Fitted Plot
+```{r}
+gf_point(resids4 ~ preds4, data = anscombe)
+```
+
+Histogram of Residuals
+```{r}
+gf_histogram(~resids4, data = anscombe)
+```
+
+ACF Plot
+```{r}
+s245::gf_acf(~model4) %>%
+  gf_lims(y = c(-1, 1))
+```
+
+Similar to two and three, this model does not pass the conditions because the residuals have a trend and the histogram of residuals are not normal.
+
+
+c.)
+```{r}
+gf_point(y1 ~ x1, data = anscombe)%>%
+  gf_lm()
+```
+
+The scatter plot seems to show a linear relationship for this one, and shows that fitting a linear model for this made sense.
+
+```{r}
+gf_point(y2 ~ x2, data = anscombe)%>%
+  gf_lm()
+```
+
+For this one, a linear model clearly does not make sense, and I would not have know that without seeing this scatterplot.
+
+```{r}
+gf_point(y3 ~ x3, data = anscombe)%>%
+  gf_lm()
+```
+
+For this one, there is a clear outlier that is changing the regression line. Looking at this scatterplot beforehand would have been helpful to note that there was an outlier, but the rest of the points have a clear linear trend.
+
+```{r}
+gf_point(y4 ~ x4, data = anscombe)%>%
+  gf_lm()
+```
+
+Once again, this data would not make sense to fit a linear model to, and since the model we got seemed fine, we should look at these plots before fitting an lm().
+
+d.) Overall, since all of the models had very similar slope and intercept estimates, it would have seemed that the data for each came from the same population or that all four datasets had similarities. After looking at the scatter plots and checking conditions, it is clear that some of these would not make sense to fit a linear model to or an outlier would affect the model. The scatterplots showed that these data sets had little in common.
+
+
+### Problem 6.59
+e.)
+```{r}
+gf_point(time ~ conc, data = clot)
+
+clot.model <- lm(time ~ conc, data = clot)
+summary(clot.model)
+```
+```{r}
+clot <- clot %>%
+  mutate(preds = predict(clot.model), resids = resid(clot.model))
+```
+
+Residuals vs. Fitted Plot
+```{r}
+gf_point(resids ~ preds, data = clot)
+```
+
+This residual plot checks the lack of non-linearity condition. There seems to be a trend in the scatterplot of residuals vs. predictions, so the model does not pass this condition.
+
+Histogram of Residuals
+```{r}
+gf_histogram(~resids, data = clot)
+```
+
+This histogram of residuals checks the normality of residuals condition. The histogram is not normal, so it would not pass this condition, however, if it were not for the other conditions not being passed, I might be able to let this one slide.
+
+ACF Plot
+```{r}
+s245::gf_acf(~clot.model) %>%
+  gf_lims(y = c(-1, 1))
+```
+
+This ACF plot checks independence of residuals and it seems to pass this condition, since none of the bars go past the limits.
+
+Our model can not provide reliable conclusions because the conditions are not met.
+
+f.)
+
+```{r}
+new_data <- data.frame(conc = 30)
+conf_int <- predict(clot.model, newdata = new_data, 
+        interval = 'confidence',
+        level = 0.95)
+conf_int
+```
+
+In this scenario I would want to find an interval estimate for the average time in seconds it takes for blood to clot if the concentration is 30% prothrombin-free plasma. I would use a confidence interval because I would want to find how long it typically takes to clot, not the interval for one individual case. In this case, at a concentration of 30%, the 95% confidence interval for the average time it takes to clot is between 26.22 and 48.82 seconds.
+
+### Problem 6.37
+c.)
+```{r}
+act.model <- lm(GPA ~ ACT, data = ACTgpa)
+summary(act.model)
+```
+
+Using an adjusted R-squared of 0.6404, we can say that 64.04% of the variation in GPAs is explained by a student's ACT score.
+
+d.)
+```{r}
+new_data <- data.frame(ACT = 25)
+conf_int <- predict(act.model, newdata = new_data, 
+        interval = 'confidence',
+        level = 0.95)
+conf_int
+```
+
+A 95% confidence interval for the average GPA for a student who scored 25 on the ACT is (3.17, 3.41).
+
+e.)
+```{r}
+new_data <- data.frame(ACT = 30)
+conf_int <- predict(act.model, newdata = new_data, 
+        interval = 'prediction',
+        level = 0.95)
+conf_int
+```
+
+A 95% prediction interval interval for the GPA for a student who scored 30 on the ACT is (3.10, 4.35).
+
+f.)
+
+```{r}
+ACTgpa <- ACTgpa %>%
+  mutate(preds = predict(act.model), resids = resid(act.model))
+
+gf_point(GPA ~ ACT, data = ACTgpa)
+
+gf_point(resids ~ preds, data = ACTgpa)
+
+gf_histogram(~resids, data = ACTgpa)
+
+s245::gf_acf(~act.model) %>%
+  gf_lims(y = c(-1, 1))
+```
+
+Looking at the scatterplot of GPA vs. ACT, there does seem to be a linear relationship, so it makes sense to fit a linear model. After checking conditions, there does not seem to be any reason to be concerned about the analyses we have done, because the histogram of residuals is mostly normal, the ACF plot does not have any that pass the limits, and the scatterplot of residuals vs. predictions is randomly scattered with no trend. It is fair to say that this model passes conditions for normality of residuals, independence of residuals, and lack od non-linearity respectively.
+
+
+### Problem 6.45a
+Is there a difference between the two different ways of measuring tread wear: tire weight and groove depth?
+
+Null Hypothesis: $\hat\beta_1 = 1$, the slope between tire weight and groove depth is 1.
+
+Alternate Hypothesis: $\hat\beta_1 \neq 1$, the slope between the tire weight and groove depth is not 1.
+
+```{r}
+gf_point(weight ~ groove, data = TireWear)
+```
+
+Since there appears to be a linear relationship, let us create a linear regression model.
+
+```{r}
+tire.model <- lm(weight ~ groove, data = TireWear)
+summary(tire.model)
+```
+
+Checking Conditions:
+```{r}
+TireWear <- TireWear %>%
+  mutate(preds = predict(tire.model), resids = resid(tire.model))
+```
+
+Residuals vs. Fitted Plot
+```{r}
+gf_point(resids ~ preds, data = TireWear)
+```
+
+This residual plot checks the lack of non-linearity condition. There seems to be no trend in the scatterplot of residuals vs. predictions, so the model passes the condition.
+
+Histogram of Residuals
+```{r, hist}
+gf_histogram(~resids, data = TireWear)
+```
+
+This histogram of residuals checks the normality of residuals condition. The histogram is mostly normal with leniency, so the model passes this condition.
+
+ACF Plot
+```{r, acf}
+s245::gf_acf(~tire.model) %>%
+  gf_lims(y = c(-1, 1))
+```
+
+This ACF plot checks independence of residuals and it seems to pass this condition, since none of the bars go past the limits.
+
+
+```{r}
+test_stat <- (1.1369 - 1)/0.1022
+test_stat
+
+2*(1 - pt(test_stat, 14))
+```
+
+Test Stat: Using $\hat\beta_1 - \beta_1 / SE(\beta_1)$, we get (1.1369 -1)/0.1022.
+
+p-value and conclusion:
+
+With a p-value of 0.201, we fail to reject the null hypothesis that $\hat\beta_1 = 1$. This means that we have enough evidence to say that the weight of the tires and the depth of the grooves provide comparable results.

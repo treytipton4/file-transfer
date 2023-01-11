@@ -1,0 +1,85 @@
+---
+title: "Stat 344 -- HW 2"
+author: "Trey Tipton"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output: 
+  pdf_document:
+    fig_height: 2.2
+    fig_width: 4
+  html_document:
+    fig_height: 2.2
+    fig_width: 4
+  word_document:
+    fig_height: 2.2
+    fig_width: 4
+---
+
+```{r, setup, include = FALSE}
+# load packages that are going to be used
+require(fastR2)   # this loads mosaic, ggformula, etc. too
+
+# Some customization.  You can alter or delete as desired (if you know what you are doing).
+
+theme_set(theme_bw())     # change theme for ggplot2/ggformula
+
+knitr::opts_chunk$set(
+  tidy = FALSE,     # display code as typed (rather than reformatted)
+  size = "small")   # slightly smaller font for code
+
+library(maxLik)
+```
+
+
+<!-- Some macros to make mathematics easier -->
+
+\newcommand{\Prob}{\mathrm{P}}
+\newcommand{\intersect}{\;\cap\;}
+\newcommand{\union}{\operatorname{\cup}}
+\newcommand{\E}{\operatorname{E}}
+\newcommand{\Var}{\operatorname{Var}}
+\newcommand{\SD}{\operatorname{SD}}
+
+<!-- Put your work below here.  Put text in text chunks, code in R chunks. -->
+
+### Problem 5.10
+```{r}
+
+LL <- function(theta, x){
+  if (theta <0) return(NA)
+  dunif(x, min = 0, max = theta, log = TRUE)
+}
+
+x <- c(1.6, 2.8, 6.2, 8.2, 8.5, 8.7)
+
+hist(x)
+```
+
+
+```{r}
+maxLik(LL, start = c(theta = 10), x = x)
+```
+The maximum likelihood estimate is $\hat{\theta} = 8.7$.
+
+### 5.12
+```{r}
+mrc <- readr::read_csv('http://sldr.netlify.app/data/mrc.csv') %>%
+  filter(mobility > 0)
+```
+
+```{r}
+LL <- function(theta, x){
+  alpha <- theta[1]
+  beta <- theta[2]
+  dbeta(x, shape1 = alpha, shape2 = beta, log = TRUE)
+}
+
+hist(mrc$mobility)
+```
+
+```{r, warning = FALSE}
+maxLik(LL, start = c(alpha = 1, beta = 1), x = mrc$mobility)
+```
+Since our data ranges from zero to one with a non normal shape, it does seem that beta would be a good model to fit this data and do a maximum likelihood estimation with.
+
+
+This homework took me just under an hour to finish

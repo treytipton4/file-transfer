@@ -1,0 +1,132 @@
+---
+title: "Stat 343 -- Final Take Home"
+author: "Trey Tipton"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output: 
+  pdf_document:
+    fig_height: 2.2
+    fig_width: 4
+  html_document:
+    fig_height: 2.2
+    fig_width: 4
+  word_document:
+    fig_height: 2.2
+    fig_width: 4
+---
+
+```{r, setup, include = FALSE}
+# load packages that are going to be used
+require(fastR2)   # this loads mosaic, ggformula, etc. too
+
+# Some customization.  You can alter or delete as desired (if you know what you are doing).
+
+theme_set(theme_bw())     # change theme for ggplot2/ggformula
+
+knitr::opts_chunk$set(
+  tidy = FALSE,     # display code as typed (rather than reformatted)
+  size = "small")   # slightly smaller font for code
+```
+
+
+<!-- Some macros to make mathematics easier -->
+
+\newcommand{\Prob}{\mathrm{P}}
+\newcommand{\intersect}{\;\cap\;}
+\newcommand{\union}{\operatorname{\cup}}
+\newcommand{\E}{\operatorname{E}}
+\newcommand{\Var}{\operatorname{Var}}
+\newcommand{\SD}{\operatorname{SD}}
+
+<!-- Put your work below here.  Put text in text chunks, code in R chunks. -->
+
+
+
+### Problem 12
+a.) Prob(none come up) = (5/6)^3 = 125/216, winnings = -$1
+
+Prob(all three come up) = 1/(6^3) = 1/216, winnings = $10
+
+Prob(two come up) = ((3*5)/216) = 15/216, winnings = $2
+
+Prob(one comes up) = 1 - Prob(one does not come up) = 1 - (141/216) = 75/216, winnings = $1
+
+E(X) = (-1)*(125/216) + (1)*(75/216) + (2)*(15/216) + (10)*(1/216) = -0.046
+```{r}
+(-1)*(125/216) + (1)*(75/216) + (2)*(15/216) + (10)*(1/216)
+```
+Var(X) = E(X^2) - E(X)^2 = (1)*(125/216) + (1)*(75/216) + (4)*(15/216) + (100)*(1/216) - (0.0462963)^2 = 1.665
+```{r}
+(1)*(125/216) + (1)*(75/216) + (4)*(15/216) + (100)*(1/216) - (0.0462963)^2 
+```
+
+b.) $P(X > 0)$ = 1 - $P(X <= 0)$ = 1 - (125/216) = 91/216 = 0.421
+
+c.)
+```{r}
+set.seed(032601)
+CLT <- do(10000)*sum(sample(c(-1,1,2,10), size = 50, replace = TRUE, 
+                            prob = c(125/216,75/216,15/216,1/216)))
+head(CLT)
+tally( ~ (sum > 0), data = CLT)
+```
+The approximate probability that a player wins money if she plays 50 times is .3562
+
+d.)
+```{r}
+set.seed(032601)
+CLT <- do(10000)*sum(sample(c(-1,1,2,10), size = 5000, replace = TRUE, 
+                            prob = c(125/216,75/216,15/216,1/216)))
+head(CLT)
+tally( ~ (sum < 0), data = CLT)
+```
+The approximate probability that the casino makes money if the game is played 5000 times is .9937
+
+e.) Casinos stay in business because if an individual plays a certain game a relatively small amount of times (50 or less), they have a pretty good probability of making money (in this case, about .36), and although they have a better chance of losing money, it is a small amount money they would be losing. At a large scale, the casino has a really good chance (.99) of making money.
+
+### Problem 13
+a.) This means that there was not enough evidence based on the data to say that the true proportion of people that show negative urine culture differs between the single or multi-dose groups.
+
+b.)
+```{r}
+test <- rbind(c(19, 6), c(22,3))
+test
+fisher.test(test)
+```
+
+The test with this data results in a p-value of 0.4635 which again is not statistically significant enough to show a difference.
+
+c.) They had fewer than 50 subjects because their p-value is higher than the one I computed, and we would expect a larger sample with the same proportions to have a lower p-value.
+
+
+### Problem 14
+It is known to humans that many random things will happen to us in our lives, and perhaps that many random things happen before we are even born to make each individual who they are. The idea that “the indifferent hand of probability governs our lives” is somewhat true; good and bad things will happen to both good and bad people seemingly at random. However, what I think this comic is trying to communicate is that although doing some action may not cause you to have good or bad luck, there are still consequences to our actions. I agree with this, and I feel like I sort of have to as if everything in life is random and my actions do not influence things, then life is meaningless. At the most it gives people an excuse to do bad things with the idea that it will not affect them. So while the “indifferent hand of probability” can affect our lives, I do not believe that it governs our lives. In the comic, breaking the mirror did not give him bad luck, but it did cause him to have a mess in front of him which will affect him.
+
+
+### Problem 15
+a.) Let's call the distribution for the difference between the true age and the rounded age $X$. 
+
+$X \sim Unif(-2.5,2.5)$
+
+The pdf for $X$ is $f(x) = 1/(2.5 - (-2.5)) = 1/5 \, for \,  -2.5<x<2.5, \, 0 \, otherwise$
+
+The approximate probability that the mean of rounded ages is within .25 is:
+
+$$\int_{-.25}^{.25} 1/5 \,dx= x/5$$ = (.25)/5 - (-.25)/5 = .5/5 = 1/10 = .1
+
+b.)
+```{r}
+set.seed(032601)
+sims <- do(10000)*mean(runif(48,-2.5,2.5))
+head(sims)
+tally(~ (mean<.25), data = sims)
+tally(~ (mean<(-.25)), data = sims)
+8911 - 1130
+```
+The approximate probability that the mean of rounded ages is within .25 years of the mean of true ages is .7781
+
+```{r}
+qt(.975, 47) 
+.7781 + qt(.975, 47)*(sqrt(25/12)/sqrt(48))
+.7781 + qt(.025, 47)*(sqrt(25/12)/sqrt(48))
+```
+

@@ -1,0 +1,285 @@
+---
+title: "Stat 344 -- HW 5"
+author: "Trey Tipton"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output: 
+  pdf_document:
+    fig_height: 2.2
+    fig_width: 4
+  html_document:
+    fig_height: 2.2
+    fig_width: 4
+  word_document:
+    fig_height: 2.2
+    fig_width: 4
+---
+
+```{r, setup, include = FALSE}
+# load packages that are going to be used
+require(fastR2)   # this loads mosaic, ggformula, etc. too
+
+# Some customization.  You can alter or delete as desired (if you know what you are doing).
+
+theme_set(theme_bw())     # change theme for ggplot2/ggformula
+
+knitr::opts_chunk$set(
+  tidy = FALSE,     # display code as typed (rather than reformatted)
+  size = "small")   # slightly smaller font for code
+
+library(maxLik)
+```
+
+
+<!-- Some macros to make mathematics easier -->
+
+\newcommand{\Prob}{\mathrm{P}}
+\newcommand{\intersect}{\;\cap\;}
+\newcommand{\union}{\operatorname{\cup}}
+\newcommand{\E}{\operatorname{E}}
+\newcommand{\Var}{\operatorname{Var}}
+\newcommand{\SD}{\operatorname{SD}}
+
+<!-- Put your work below here.  Put text in text chunks, code in R chunks. -->
+### Problem 5.30
+e.)
+```{r}
+set.seed(032601)
+LL <- function(theta, x){
+  prob <- theta[1]
+  if (theta < 0) return(NA)
+  dmultinom(x, prob = c((.25)*(2 + theta), (.25)*(1 - theta), 
+                        (.25)*(1 - theta), (.25)*(theta)), log = TRUE)
+}
+
+sample <- c(1997, 906, 904, 32)
+ml <- maxLik(LL, start = c(theta = 0.03), x = sample)
+
+theta <- 0.0357123
+r_commutes <- do(1000)*rmultinom(1, size = sum(sample), prob = c((.25)*(2 + theta),
+                (.25)*(1 - theta), (.25)*(1 - theta), (.25)*(theta)))
+LL(theta, sample)
+
+
+my.chisq <- function(o){
+  ex <- c((.25)*(2 + theta)*sum(sample), (.25)*(1 - theta)*sum(sample), (.25)*(1 - theta)*sum(sample), (.25)*(theta)*sum(sample))
+  sum((o - ex)^2 / ex)
+}
+
+
+statTally(sample, r_commutes, my.chisq)
+```
+
+With a p-value of .4386 we fail to reject the null hypothesis that the function is a good distribution for this data. 
+
+
+f.)
+
+```{r}
+p <- function(t0){
+  stat <- 2*(LL(theta, sample) - LL(t0, sample)) - qchisq(0.95, df = 1)
+}
+uniroot(p, c(0,theta)) %>%
+  value()
+uniroot(p, c(theta, 1)) %>%
+  value()
+
+```
+A 95% confidence interval for theta is (0.025, 0.049).
+
+### Problem 5.33
+Bins 1:
+```{r}
+set.seed(032601)
+dat <- do(30)*rnorm(25, 50, 25)
+hist(dat$V1)
+
+bins <- c(-100, 25, 50, 75, Inf)
+dat <- dat %>%
+  mutate(binned = cut(dat$V1, breaks = bins))
+tally(~binned, data = dat)
+
+count_dat <- data.frame(tally(~binned, data = dat))
+count_dat
+
+count_dat <- count_dat %>%
+mutate(probs = diff(pnorm(bins, mean = 50, sd = 25)),
+e = sum(count_dat$Freq) * probs )
+count_dat
+
+
+G <- 2 * sum( count_dat$Freq * log( count_dat$Freq / count_dat$e))
+G
+
+1 - pchisq(G, df = nrow(count_dat) - 1 - 2)
+```
+Bins 2:
+```{r}
+set.seed(032601)
+dat <- do(30)*rnorm(25, 50, 25)
+hist(dat$V1)
+
+bins <- c(-100, 10, 20, 30, 40, 50, 60, 70, 80, 90, Inf)
+dat <- dat %>%
+  mutate(binned = cut(dat$V1, breaks = bins))
+tally(~binned, data = dat)
+
+count_dat <- data.frame(tally(~binned, data = dat))
+count_dat
+
+count_dat <- count_dat %>%
+mutate(probs = diff(pnorm(bins, mean = 50, sd = 25)),
+e = sum(count_dat$Freq) * probs )
+count_dat
+
+
+G <- 2 * sum( count_dat$Freq * log( count_dat$Freq / count_dat$e))
+G
+
+1 - pchisq(G, df = nrow(count_dat) - 1 - 2)
+```
+Bins 3:
+```{r}
+set.seed(032601)
+dat <- do(30)*rnorm(25, 50, 25)
+hist(dat$V1)
+
+bins <- c(-100, 15, 30, 45, 60, 75, 90, Inf)
+dat <- dat %>%
+  mutate(binned = cut(dat$V1, breaks = bins))
+tally(~binned, data = dat)
+
+count_dat <- data.frame(tally(~binned, data = dat))
+count_dat
+
+count_dat <- count_dat %>%
+mutate(probs = diff(pnorm(bins, mean = 50, sd = 25)),
+e = sum(count_dat$Freq) * probs )
+count_dat
+
+
+G <- 2 * sum( count_dat$Freq * log( count_dat$Freq / count_dat$e))
+G
+
+1 - pchisq(G, df = nrow(count_dat) - 1 - 2)
+```
+The p-values for goodness of fit tests for a normal distribution are different. With 4 bins, the p-value we got is 0.359. With 10 bins, our p-value is .701. For 7 bins, the p-value is .91314
+
+```{r}
+number_bins <- c(4, 7, 10)
+pvals <- c(.359, .913, .701)
+
+gf_point(pvals ~ number_bins) %>%
+  gf_labs(x = 'Number of Bins', y = 'p-value')
+```
+
+
+This is somewhat a cause for concern but all of the p-values are still well above any rejection significance level, so I do not see too much of an issue.
+
+## Extra Credit with pois
+```{r}
+set.seed(032601)
+dat <- do(30)*rpois(25, 5)
+hist(dat$V1)
+
+bins <- c(-100, 2.5, 5, 7.5, Inf)
+dat <- dat %>%
+  mutate(binned = cut(dat$V1, breaks = bins))
+tally(~binned, data = dat)
+
+count_dat <- data.frame(tally(~binned, data = dat))
+count_dat
+
+count_dat <- count_dat %>%
+mutate(probs = diff(ppois(bins, lambda = 5)),
+e = sum(count_dat$Freq) * probs )
+count_dat
+
+
+G <- 2 * sum( count_dat$Freq * log( count_dat$Freq / count_dat$e))
+G
+
+1 - pchisq(G, df = nrow(count_dat) - 1 - 2)
+```
+```{r}
+set.seed(032601)
+dat <- do(30)*rpois(25, 5)
+hist(dat$V1)
+
+bins <- c(-100, 1, 2, 3, 4, 5, 6, 7, Inf)
+dat <- dat %>%
+  mutate(binned = cut(dat$V1, breaks = bins))
+tally(~binned, data = dat)
+
+count_dat <- data.frame(tally(~binned, data = dat))
+count_dat
+
+count_dat <- count_dat %>%
+mutate(probs = diff(ppois(bins, lambda = 5)),
+e = sum(count_dat$Freq) * probs )
+count_dat
+
+
+G <- 2 * sum( count_dat$Freq * log( count_dat$Freq / count_dat$e))
+G
+
+1 - pchisq(G, df = nrow(count_dat) - 1 - 2)
+```
+
+```{r}
+set.seed(032601)
+dat <- do(30)*rpois(25, 5)
+hist(dat$V1)
+
+bins <- c(-100, 1.5, 3, 6, 7.5, 9, Inf)
+dat <- dat %>%
+  mutate(binned = cut(dat$V1, breaks = bins))
+tally(~binned, data = dat)
+
+count_dat <- data.frame(tally(~binned, data = dat))
+count_dat
+
+count_dat <- count_dat %>%
+mutate(probs = diff(ppois(bins, lambda = 5)),
+e = sum(count_dat$Freq) * probs )
+count_dat
+
+
+G <- 2 * sum( count_dat$Freq * log( count_dat$Freq / count_dat$e))
+G
+
+1 - pchisq(G, df = nrow(count_dat) - 1 - 2)
+```
+
+```{r}
+number_bins <- c(4, 6, 8)
+pvals <- c(.284, .75, .601)
+
+gf_point(pvals ~ number_bins) %>%
+  gf_labs(x = 'Number of Bins', y = 'p-value')
+```
+
+Our p-value for goodness of fit for poisson distribution is 0.2843957 for only 4 bins, .6012948 for 8 bins, and .75 for 6 bins.
+
+### Problem 5.36
+```{r}
+require(fastR2)
+
+Fusion1m <- merge(FUSION1, Pheno, by = "id", all = FALSE)
+tally( ~ t2d + genotype, data = Fusion1m)
+```
+a.) T is the "risk allele".
+
+b.)
+Hypotheses:
+$H_0$: SNP and Type 2 Diabetes are independent.
+$H_a$: SNP and Type 2 Diabetes relate to each other.
+
+```{r}
+chisq.test(Fusion1m$t2d, Fusion1m$genotype)
+```
+At a low p-value of 0.0001, we reject the null hypothesis and can say that there is some sort of association between SNP and Type 2 Diabetes.
+
+c.)
+Knowing this just means that our sample could be anywhere on the spectrum of the different 300,000 samples. However, I still interpret the results as accurate because the p-value is very low and the data seems convincing.
+
+

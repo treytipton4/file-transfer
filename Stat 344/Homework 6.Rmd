@@ -1,0 +1,213 @@
+---
+title: "Stat 344 -- HW 6"
+author: "Trey Tipton"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output: 
+  pdf_document:
+    fig_height: 2.2
+    fig_width: 4
+  html_document:
+    fig_height: 2.2
+    fig_width: 4
+  word_document:
+    fig_height: 2.2
+    fig_width: 4
+---
+
+```{r, setup, include = FALSE}
+# load packages that are going to be used
+require(fastR2)   # this loads mosaic, ggformula, etc. too
+
+# Some customization.  You can alter or delete as desired (if you know what you are doing).
+
+theme_set(theme_bw())     # change theme for ggplot2/ggformula
+
+knitr::opts_chunk$set(
+  tidy = FALSE,     # display code as typed (rather than reformatted)
+  size = "small")   # slightly smaller font for code
+```
+
+
+<!-- Some macros to make mathematics easier -->
+
+\newcommand{\Prob}{\mathrm{P}}
+\newcommand{\intersect}{\;\cap\;}
+\newcommand{\union}{\operatorname{\cup}}
+\newcommand{\E}{\operatorname{E}}
+\newcommand{\Var}{\operatorname{Var}}
+\newcommand{\SD}{\operatorname{SD}}
+
+<!-- Put your work below here.  Put text in text chunks, code in R chunks. -->
+
+### Problem 5.46 d.)
+
+```{r}
+classes <- c(9, 39, 22, 35, 28)
+
+lambda <- mean(classes)
+
+lambda
+
+```
+We want a gamma prior with a mean of 26.6
+
+
+```{r}
+gf_dist(dist = 'gamma', 
+        params = list(shape = 21.28,
+                      rate = .8)) |>
+  gf_labs(title = 'Prior')
+```
+
+```{r}
+alpha <- 21.28
+theta <- .8 
+
+sum(classes) + alpha
+
+length(classes) + theta
+```
+
+
+$$g(\lambda) = \text{Gamma}(\alpha = 154.28, \theta = 5.8)$$
+
+```{r}
+gf_dist(dist = 'gamma', 
+        params = list(shape = 154.28,
+                      rate = 5.8)) |>
+  gf_labs(title = 'Posterior')
+```
+
+
+```{r}
+set.seed(032601)
+post_sample <- rgamma(n = 10000, shape = 154.28, rate = 5.8)
+```
+
+
+
+
+```{r}
+cdata(~post_sample, p = 0.95)
+```
+
+A 95% credible interval for lambda for our data is (22.54, 30.98). This means that we are 95% confident that this interval contains the true value of lambda (also known as the mean) for a poisson distribution that our data came from.
+
+
+### Problem 5.47
+a.)
+```{r, results = "hide"}
+set.seed(032601)
+Positions <- rgeo(25)
+leaflet_map(position = Positions, mark = TRUE)
+```
+Observed: land = 5, water = 20.
+
+
+Using uniform prior of Unif(0,1):
+
+prior: $g(\pi) = 1$
+likelihood: $f(x|\pi) = \pi^a(1-\pi)^b$
+
+which means our posterior is: $h(/pi|x) = (1)*(\pi^a(1-\pi)^b)$, so $\pi$ ~ $Beta(5 + 1, 20 + 1)$
+
+```{r}
+set.seed(032601)
+post_unif <- rbeta(n = 10000, shape1 = 6, shape2 = 21)
+cdata(~post_unif, p = 0.90)
+```
+A 90% credible interval for the proportion using a uniform prior is (0.106, 0.361).
+
+```{r}
+gf_dist(dist = 'beta', 
+        params = list(shape1 = 4,
+                      shape2 = 8)) |>
+  gf_labs(title = 'Posterior')
+```
+
+Using Beta prior of Beta(4,8):
+
+prior: $g(\pi) = \pi^{\alpha - 1}(1 - \pi)^{\beta - 1}$
+likelihood: $f(x|\pi) = \pi^a(1-\pi)^b$
+
+which means our posterior is: $h(\pi|x) = \pi^{\alpha-1+a}(1-\pi)^{\beta-1+b}$, so $\pi$ ~ $Beta(\alpha + a, \beta + b)$
+
+$\pi$ ~ $Beta(9, 28)$
+
+```{r}
+set.seed(032601)
+post_beta <- rbeta(n = 10000, shape1 = 9, shape2 = 28)
+cdata(~post_beta, p = 0.90)
+```
+A 90% credible interval for the proportion using a beta prior is (0.138, 0.364).
+
+
+b.)
+
+```{r, results = "hide"}
+set.seed(032641)
+Positions <- rgeo(25)
+leaflet_map(position = Positions, mark = TRUE)
+```
+Observed land=8, water=17.
+
+Using Beta prior of Beta(9,28) (from last posterior):
+
+Our new prior is $g(\pi)$ = $h(\pi|x) = \pi^{\alpha-1+a}(1-\pi)^{\beta-1+b}$.
+likelihood: $f(x|\pi) = \pi^a(1-\pi)^b$
+
+New posterior is: $h(\pi|x) = \pi^{\alpha-1+2a}(1-\pi)^{\beta-1+2b}$.
+
+so $\pi$ ~ $Beta(\alpha + 2a, \beta + 2b)$
+
+$\pi$ ~ $Beta(9 + 2(8),28 + 2(17))$
+
+```{r}
+set.seed(032601)
+post_beta2 <- rbeta(n = 10000, shape1 = 25, shape2 = 62)
+cdata(~post_beta2, p = 0.90)
+```
+
+Final using original posterior with 50 observations:
+
+Using Beta prior of Beta(9,28):
+
+posterior is the same: $h(\pi|x) = \pi^{\alpha-1+2a}(1-\pi)^{\beta-1+2b}$.
+
+so $\pi$ ~ $Beta(\alpha + 2a, \beta + 2b)$
+
+$\pi$ ~ $Beta(9 + 2(13),28 + 2(37))$
+
+```{r}
+set.seed(032641)
+post_beta2 <- rbeta(n = 10000, shape1 = 35, shape2 = 102)
+cdata(~post_beta2, p = 0.90)
+```
+
+c.)
+```{r}
+grid <- expand.grid(pi = seq(from = 0, by = 0.001, to = 1))
+```
+
+```{r}
+a <- 13
+b <- 37
+alpha <- 9
+beta <- 28
+
+grid <- grid |>
+  mutate(prior = pi^(alpha - 1 + 2*a)*(1-pi)^(beta - 1 + 2*b), likelihood = dbinom(x = a, size = a + b, prob = pi), posterior = prior * likelihood)
+
+numerical_posterior <- with(grid, sample(x = pi, size = 1e6, prob = posterior, replace = TRUE))
+
+gf_dhistogram(~numerical_posterior) %>%
+  gf_dist('beta', shape1 = 34, shape2 = 101)
+```
+
+The Numerically obtained posterior sample distribution of the proportion seems to agree with the analytically obtained posterior distribution.
+
+
+
+
+
+

@@ -1,0 +1,142 @@
+---
+title: "DATA 202 Homework 6"
+author: "Trey Tipton"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_download: true
+---
+
+```{r setup, include=FALSE}
+# Set some useful chunk options for code chunks.
+knitr::opts_chunk$set(
+  echo = TRUE,
+  error = TRUE,    # display errors but keep going.
+  comment = "",    # don't add '##' characters before output.
+  message = FALSE  # don't include messages in the knitted output (check them in RStudio)
+  )
+library(tidyverse)
+library(tidymodels)
+library(parsnip)
+library(recipes)
+library(rsample)
+library(yardstick)
+library(tune)
+theme_set(theme_bw())
+```
+
+## Predicting the Sale Price of Homes
+
+### 1. Setting up the problem:
+
+a. Some features for this task might be the location, square-footage, and year of sale of the home.
+
+b. A target for this task would be the sale price of the home.
+
+c. This is a regression task.
+
+d. Mean absolute error
+
+e. Predicted values tend to be off by about 10%.
+
+f. An inappropriate error metric would be accuracy because this is a regression model not a classification.
+
+
+### 2. Fitting and evaluating a model
+
+```{r}
+ames_home_sales <- read_builtin("ames", package = "modeldata") %>% 
+  mutate(Sale_Price = Sale_Price / 1000) %>% 
+  filter(Gr_Liv_Area < 4000, Sale_Condition == "Normal")
+```
+
+a.
+```{r}
+set.seed(032601)
+ames_split <- initial_split(ames_home_sales, prop = .9)
+ames_train <- training(ames_split)
+ames_test <- testing(ames_split)
+```
+
+b.
+```{r}
+my_model_spec <- parsnip::linear_reg(mode = "regression")
+my_trained_model <- my_model_spec %>% 
+  fit(Sale_Price ~ Gr_Liv_Area, data = ames_train)
+```
+
+c.
+```{r}
+metrics <- yardstick::metric_set(mae, mape, rsq_trad)
+train_predictions <- my_trained_model %>% 
+  predict(ames_test) %>% 
+  bind_cols(ames_test)%>% 
+  metrics(truth = Sale_Price, estimate = .pred)
+
+train_predictions
+```
+
+d. Predictions for this model tend to be off by around 20%.
+
+
+### 3. Setting up the problem again:
+
+a. Some features for this task might be the location, square-footage, and year of sale of the home.
+
+b. A target for this task would be the sale category of the home.
+
+c. This is a classification task.
+
+d. Accuracy
+
+e. Predicted values tend to be off by about 10%.
+
+f. An inappropriate error metric would be mae because this is a classification model not a regression.
+
+
+### 4. Fitting and evaluating a model
+
+```{r}
+ames_vs_median <- ames_home_sales %>% 
+  mutate(sale_category = case_when(
+    Sale_Price > median(Sale_Price) ~ "Above Median",
+    TRUE ~ "Below Median"
+  ) %>% 
+    as_factor() %>% 
+    fct_relevel("Above Median") # Make sure that "Above Median" is considered the positive class.
+  )
+```
+
+
+a.
+```{r}
+set.seed(032601)
+ames_split2 <- initial_split(ames_vs_median, prop = .9)
+ames_train2 <- training(ames_split2)
+ames_test2 <- testing(ames_split2)
+```
+
+b.
+```{r}
+my_model_spec2 <- parsnip::decision_tree(mode = "classification")
+my_trained_model2 <- my_model_spec2 %>% 
+  fit(sale_category ~ Gr_Liv_Area, data = ames_train2)
+```
+
+c.
+```{r}
+metrics <- yardstick::metric_set(accuracy, specificity, sensitivity)
+
+train_predictions2 <- my_trained_model2 %>% 
+  predict(ames_test2) %>% 
+  bind_cols(ames_test2)%>% 
+  metrics(truth = sale_category, estimate = .pred_class)
+
+train_predictions2
+```
+
+d. This model predicting whether the house is above or below the median is correct about 81% of the time.
+
+
+
+

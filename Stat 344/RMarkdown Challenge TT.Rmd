@@ -1,0 +1,77 @@
+---
+title: "Stat 344 - RMarkdown Challenge"
+author: "Trey Tipton"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output: 
+  pdf_document:
+    fig_height: 2.2
+    fig_width: 4
+  html_document:
+    fig_height: 2.2
+    fig_width: 4
+  word_document:
+    fig_height: 2.2
+    fig_width: 4
+---
+
+```{r, setup, include = FALSE}
+# load packages that are going to be used
+require(fastR2)   # this loads mosaic, ggformula, etc. too
+
+# Some customization.  You can alter or delete as desired (if you know what you are doing).
+
+theme_set(theme_bw())     # change theme for ggplot2/ggformula
+
+knitr::opts_chunk$set(
+  tidy = FALSE,     # display code as typed (rather than reformatted)
+  size = "small")   # slightly smaller font for code
+
+
+olympics <- readr::read_csv('https://sldr.netlify.com/data/athlete_events.csv')
+
+```
+
+
+<!-- Some macros to make mathematics easier -->
+
+\newcommand{\Prob}{\mathrm{P}}
+\newcommand{\intersect}{\;\cap\;}
+\newcommand{\union}{\operatorname{\cup}}
+\newcommand{\E}{\operatorname{E}}
+\newcommand{\Var}{\operatorname{Var}}
+\newcommand{\SD}{\operatorname{SD}}
+
+<!-- Put your work below here.  Put text in text chunks, code in R chunks. -->
+
+### Mathematical Notation
+The probability of both event A and event B happening is $P(A \cap B)$, and if A and B are independent, this quantity is equivalent to $P(A)P(B)$.
+
+One way of writing the equation for a simple linear regression of y as a function of x is:
+
+$$y = \beta_0 + \beta_1 x + \epsilon,$$
+
+$$\epsilon \sim N(0,\sigma)$$
+
+### A Dataset
+
+A dataset on participants in the Olympic Games is available at https://sldr.netlify.com/data/athlete_events.csv.
+
+A glimpse() of the dataset is below:
+```{r}
+glimpse(olympics)
+```
+
+### Graphics
+## Age distribution of Olympians
+```{r echo = FALSE, warning = FALSE}
+gf_dhistogram(~Age, data = olympics)
+```
+
+### Numbers of Male and Female Olympians
+```{r echo = FALSE}
+gf_props(~Sex, data = olympics)%>%
+  gf_labs(title = 'Olympians by Sex (1896 - 2016)')
+```
+
+
+  

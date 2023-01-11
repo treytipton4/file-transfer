@@ -1,0 +1,153 @@
+---
+title: "Lab 6.1 - Visualizing Spatial Data"
+author: "Trey Tipton"
+date: "Fall 2022"
+output:
+  html_document:
+    code_download: true
+---
+
+```{r setup, include = FALSE}
+# Set some useful chunk options for code chunks.
+knitr::opts_chunk$set(
+  echo = TRUE,
+  error = TRUE,    # display errors but keep going.
+  comment = "",    # don't add '##' characters before output.
+  message = FALSE  # don't include messages in the knitted output (check them in RStudio)
+  )
+library(tidyverse)
+theme_set(theme_bw())
+```
+
+The late comedian [Mitch Hedberg](https://en.wikipedia.org/wiki/Mitch_Hedberg) famously joked that "La Quinta" is Spanish for "next to Denny's". In this lab exercise, we explore the accuracy of his claim that [Denny's](https://www.dennys.com/), a casual diner chain that is open 24 hours, is actually co-located with [La Quinta Inn and Suites](http://www.lq.com/), a hotel chain. This lab is inspired by a blog post by John Reiser entitled [Mitch Hedberg and GIS](http://njgeo.org/2014/01/30/mitch-hedberg-and-gis/).
+
+## Loading the Dataset
+
+We use three datasets, all stored in [./data](https://cs.calvin.edu/courses/info/601/06wrangling/lab/data/.):
+
+- `dennys` --- The locations of all Denny's restaurants:
+  - *Scraped* from [All Denny's Locations](https://locations.dennys.com/)
+  - Described here: [Locations of Denny's restaurants](https://rstudio-education.github.io/dsbox/reference/dennys.html)
+  
+- `laquinta` --- The locations of all La Quinta hotels: 
+  - *Scraped* from [La Quinta Locations](https://www.wyndhamhotels.com/laquinta/locations)
+  - Described here: [Locations of La Quinta Inn motels](https://rstudio-education.github.io/dsbox/reference/laquinta.html)
+
+- `states` --- The names of all the US states, including DC, plus some additional information.
+
+Note that the first two datasets are represented in RDS format, which is an R-internal format for datasets that maintains data types. The last dataset is in CSV format and requires some 
+
+```{r load-data, message=FALSE}
+dennys <- read_rds("data/dennys.rds")
+laquinta <- read_rds("data/laquinta.rds")
+states <- read_csv("data/states.csv", col_types = cols(
+  name = col_character(),
+  abbreviation = col_character(),
+  area = col_double()
+))
+```
+
+The dennys and laquinta datasets contain the address, city, state, zip code, and the coordinates of all of the locations in the world. The states dataset contains the name and abbreviations of all of the U.S. states as well as their area. The dennys dataset has 1643 observations (locations), laquinta 909, and the states 51 (including DC).
+
+## Focusing on US Locations
+
+We limit our analysis to Denny"s and La Quinta locations in the United States.
+
+Are there any Denny's or La Quinta locations that are outside the US? Answer this by filtering for observations where `state` is not in `states$abbreviation`. Here, the `%in%` operator matches the states listed in the `state` variable to those listed in the `states$abbreviation` vector. The `!` operator means **not**:
+
+```{r}
+dennys %>%
+  filter(!(state %in% states$abbreviation))
+
+laquinta <- laquinta %>%
+  filter((state %in% states$abbreviation))
+```
+
+There are not any observations outside the U.S. for Denny's, there are 14 outside of the U.S. for La Quinta. I changed the code above to remove those 14 locations from the dataset.
+
+Going forward we will work with the data from the United States only, so you can redefine `dennys` and `laquinta` to include only US locations. Include an indication of how many Denny's and La Quinta records are filtered out because they are not in the US.
+
+
+
+
+## Computing Frequencies
+
+We now compute some density statistics for the two franchises.
+
+### By State
+
+Compute which states have the most and fewest Denny's locations. Do the same for La Quinta. Describe the results and discuss whether there's anything interesting about them.
+
+```{r}
+dennys %>%
+  count(state, sort = TRUE)
+```
+
+
+California has the most Denny's locations and Delaware has the fewest. It makes sense that California has the most locations because of its population and area, but Delaware only having one location is somewhat interesting, even with how small it is.
+
+```{r}
+laquinta %>%
+  count(state, sort = TRUE)
+```
+
+```{r}
+states %>%
+  filter(!(abbreviation %in% laquinta$state))
+```
+
+Texas has the most La Quinta locations and Delaware, Hawaii, and DC have no locations. Again, it makes sense that Texas has a lot of locations, but it is surprising that California has so little in comparison, and that there are states without locations at all.
+
+### By Area
+
+Compute which states have the most Denny's locations *per thousand square miles*. Do the same for La Quinta. Describe the results and discuss whether there's anything interesting about them. *Note*: to do this, you'll need to *look up* the area of the states in the `states` dataset. Start with the table of counts by state that you just computed above and then *join* it with the table that has the area of each state. The states' areas are given in square miles; make a new column for the result of the unit conversion.
+
+```{r}
+dennys_area <- left_join(dennys, states, by = c('state' = 'abbreviation'))
+
+dennys_area %>%
+  count(state, wt = 1000/area, sort = TRUE)
+
+```
+
+```{r}
+laquinta_area <- left_join(laquinta, states, by = c('state' = 'abbreviation'))
+
+laquinta_area %>%
+  count(state, wt = 1000/area, sort = TRUE)
+
+```
+
+It is interesting that when accounting for the square mileage, per 1000 square miles, Rhode Island has the most La Quinta locations and also the most Denny's locations with the exception of DC.
+
+## Plotting Locations
+
+Finally, we plot the locations (latitude and longitude) of both establishments.
+
+To do this, we'll put the two datasets together into a single data frame.
+First, we'll add an identifier variable called `establishment` to distinguish rows from the two datasets, and then we'll bind them with the `bind_rows` function (n.b., this binding works because the two tables have the same columns):
+
+```{r}
+dn_lq <- bind_rows(
+  dennys %>% mutate(establishment = "Denny's"), 
+  laquinta %>% mutate(establishment = "La Quinta"), 
+)
+```
+
+Plot the locations of the two establishments using a scatter plot, and color the points by the establishment type. *Note*: the latitude is plotted on the x-axis and the longitude on the y-axis.
+
+```{r}
+dn_lq %>% 
+  ggplot() +
+  aes(x = longitude, y = latitude, color = establishment) +
+  geom_point(size = .5) +
+  labs(x = "Longitude", y = 'Latitude', title = "Denny's and La Quinta Geographical Locations", color = 'Establishment')
+  
+```
+
+
+## Drawing Conclusions
+
+In conclusion, do Denny's restaurants and La Quinta motels appear, visually, to be co-located?
+
+Overall, it does not appear that Denny's and La Quinta motels appear to be co-located; there are too many spots that have one and not the other for me to say that they are co-located. However, there are several areas that contain both.

@@ -1,0 +1,155 @@
+---
+title: "Stat 344 -- HW 7"
+author: "Trey Tipton"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output: 
+  pdf_document:
+    fig_height: 2.2
+    fig_width: 4
+  html_document:
+    fig_height: 2.2
+    fig_width: 4
+  word_document:
+    fig_height: 2.2
+    fig_width: 4
+---
+
+```{r, setup, include = FALSE}
+# load packages that are going to be used
+require(fastR2)   # this loads mosaic, ggformula, etc. too
+
+# Some customization.  You can alter or delete as desired (if you know what you are doing).
+
+theme_set(theme_bw())     # change theme for ggplot2/ggformula
+
+knitr::opts_chunk$set(
+  tidy = FALSE,     # display code as typed (rather than reformatted)
+  size = "small")   # slightly smaller font for code
+
+require(fastR2)
+
+require(faraway)
+```
+
+
+<!-- Some macros to make mathematics easier -->
+
+\newcommand{\Prob}{\mathrm{P}}
+\newcommand{\intersect}{\;\cap\;}
+\newcommand{\union}{\operatorname{\cup}}
+\newcommand{\E}{\operatorname{E}}
+\newcommand{\Var}{\operatorname{Var}}
+\newcommand{\SD}{\operatorname{SD}}
+
+<!-- Put your work below here.  Put text in text chunks, code in R chunks. -->
+
+### Problem 6.6
+c.)
+```{r}
+x <- c(1,2,3,4)
+y <- c(2,5,6,8)
+
+beta1 <- (sum(x*y))/(sum(x^2))
+beta1
+
+lm(y ~ 0 + x)
+lm(y ~ -1 + x)
+
+summary(lm(y ~ 0 + x))
+```
+e.)
+```{r}
+e <- y - (beta1*x)
+sumq <- sum(e^2)
+esigma <- sqrt(sumq/(length(y)-1))
+esigma
+se <- esigma/(sqrt(sum(x^2)))
+se
+```
+
+
+
+### Problem 6.34
+```{r}
+model <- lm(distance ~ projectileWt, data = Trebuchet2)
+x <- Trebuchet2$projectileWt
+se.beta1 <- x - mean(x)
+summary(model)
+
+sse <- sum(resid(model)^2)
+s <- sqrt(sse/(length(x) - 2))
+s
+sxx <- sum((x - mean(x))^2)
+meansq <- mean(x)^2
+se.beta1 <- s/sqrt(sxx)
+se.beta1
+
+se.beta0 <- s*(sqrt((1/length(x)) + (meansq/sxx)))
+se.beta0
+
+```
+
+
+### Problem 6.59
+a.)
+Response variable: Time
+
+Predictor variable: Concentration
+
+I chose time as the response variable because it seems like the percentage concentrations of plasma would affect how long it takes for the blood to clot.
+
+```{r}
+gf_point(time ~ conc, data = clot)
+```
+
+b.)
+```{r}
+clot.model <- lm(time ~ conc, data = clot)
+summary(clot.model)
+```
+Equation:
+$\hat\beta_1$ = -0.5020
+$\hat\beta_0$ = 52.5791
+$\sigma$ = 21.54
+$$Y_{time} = 52.5791 -0.5020x_{conc} + \epsilon$$, $\epsilon$ ~ Norm(0, 21.54)
+
+c.)
+
+```{r}
+xbar <- mean(clot$conc)
+ybar <- mean(clot$time)
+sy <- sd(clot$time)
+sx <- sd(clot$conc)
+
+r <- cor(clot$time ~ clot$conc)
+
+beta1 <- r*(sy/sx)
+beta1
+
+beta0 <- ybar - beta1*xbar
+beta0
+
+resids <- clot$time - (beta0 + beta1*clot$conc)
+sum <- sum(resids^2)
+sigma <- sqrt(sum/length(clot$time))
+sigma
+```
+d.)
+```{r}
+ll <- function(theta, x){
+  beta0 <- theta[1]
+  beta1 <- theta[2]
+  sigma <- theta[3]
+  resids <- clot$time - (beta0 + beta1*clot$conc)
+  if (sigma < 0) return(NA)
+  dnorm(resids, mean = 0, sd = sigma, log = TRUE)
+}
+
+
+library(maxLik)
+maxLik(logLik = ll, start = c(beta0 = 0, beta1 = 1, sigma = .5), x = clot)
+```
+
+
+
+  

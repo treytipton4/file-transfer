@@ -1,0 +1,86 @@
+---
+title: "Homework 1"
+author: "Trey Tipton"
+date: "Fall 2022"
+output: html_document
+---
+## The Purpose
+
+The purpose is to predict the hourly demand for rental bikes using the Capital Bikeshare data set, so that they can plan the availability of bikes at different times and parts of the system.
+
+## The Dataset
+
+```{r}
+library(tidyverse)
+bikeshare <- read_csv("data/bikeshare-day-simple.csv")
+head(bikeshare)
+```
+
+The source of this dataset is an excel file (.csv) that comes from the Capital Bikeshare program over the course of 2011 and 2012.
+
+## The Analysis
+
+1. The four fields of this data are the date, day of week, working day, and total rides. The date is the day that those rides occurred in the format of "2011-1-1" for January 1st, 2011. They day of week is what day of the week it was recorded, starting at 0 and going to 6. The working day is a categorical variable, distinguishing whether the rides were recorded on a weekday or a weekend. The total rides gives a number for how many rides were recorded that day.
+
+2. The dataset contains 731 rows each of which representing how many rides occured on a certain day of the year, whether it was a weekday or weekends, and what day of the week it was.
+
+3. 
+
+```{r}
+bikeshare %>%
+  ggplot() +
+  aes(x = date, y = total_rides) +
+  geom_point() +
+  geom_smooth() +
+  labs(
+    x = "date", 
+    y = "number of rides"
+  )
+```
+
+4.
+
+```{r}
+bikeshare %>%
+  ggplot() +
+  aes(x = date, y = total_rides, color = workingday) +
+  geom_point() +
+  geom_smooth() +
+  labs(
+    x = "date", 
+    y = "number of rides",
+    color = "working day?"
+  )
+```
+
+5. The number of rides for weekdays follows a similar trend to the number of rides on weekends over the time period, but is consistently higher for weekdays. This is likely because Capital Bikeshare riders use the bikes mostly to get to and from work.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

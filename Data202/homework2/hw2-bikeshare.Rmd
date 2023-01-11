@@ -1,0 +1,150 @@
+---
+title: "DATA 202 Homework 2"
+author: "Trey Tipton"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_download: true
+---
+
+```{r setup, include=FALSE}
+# Set some useful chunk options for code chunks.
+knitr::opts_chunk$set(
+  echo = TRUE,
+  error = TRUE,    # display errors but keep going.
+  comment = "",    # don't add '##' characters before output.
+  message = FALSE  # don't include messages in the knitted output (check them in RStudio)
+  )
+library(tidyverse)
+theme_set(theme_bw())
+```
+
+## The Dataset
+
+```{r}
+daily_rides <- read_csv("data/bikeshare-day.csv") %>%
+    mutate(across(c(season, year, holiday, workingday, day_of_week, weather_type, rider_type), as.factor))
+glimpse(daily_rides)
+```
+
+The source of this dataset is an excel file (.csv) that comes from the Capital Bikeshare program over the course of 2011 and 2012.
+
+## Exercise 1: Label Days of Week
+
+1. The mapping is 0 attributed to Sunday through 6 attributed to Saturday. We know this because the days are in order (as the days go from 0-6 as the calendar days go up) and the numbers 0 and 6 are attributed to weekend, meaning they are Sunday and Saturday respectively. If 0 was Saturday, then 1 would be Sunday, but we know that it is not because the days labeled 1 are attributed to a workday and not a weekend.
+
+2.
+
+```{r}
+daily_rides <- daily_rides %>%
+  mutate(day_of_week = factor(day_of_week, levels = c(0, 1, 2, 3, 4, 5, 6), labels = c('Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat')))
+```
+
+3.
+```{r}
+head(daily_rides)
+```
+
+The resulting dataset is correct; we know this because 'Sat' and 'Sun' labels are the only ones attributed to weekend.
+
+## Exercise 2: Describe a Row
+
+On January 1st, 2011, it was a Saturday, making it the weekend, and there were 331 casual riders on a non-holiday (at least it is listed as so).
+
+## Exercise 3: Rides by date, by rider type
+
+```{r}
+daily_rides %>%
+  ggplot() +
+  aes(x = date, y = rides, color = rider_type) +
+  geom_point(size = 1, alpha = 0.5) +
+  geom_smooth() +
+  labs(
+    x = "Date", 
+    y = "Number of Rides",
+    color = "Type of Rider",
+    title = "Number of Rides over Time for Casual and Registered Riders"
+  )
+```
+
+This plot shows that there is typically more registered riders each day and they have overall increased more over time than the number of casual riders.
+
+## Exercise 4: Mapping vs. Faceting
+
+```{r}
+daily_rides %>%
+  ggplot() +
+  aes(x = date, y = rides, color = workingday) +
+  geom_point(size = 1, alpha = 0.5) +
+  geom_smooth() +
+  facet_wrap(vars(rider_type), scales = 'free') +
+  labs(
+    x = "Date", 
+    y = "Number of Rides",
+    color = "Weekend or Workday?",
+    title = "Number of Rides over Time depending on Working Day"
+  )
+```
+
+Since this plot is more about comparing weekend and workday (and the last one was comparing casual and registered), making the scales free really helped this plot. For one, it helped with some overlapping of the Date labels, and it also made the casual side a lot easier to read. This plot is better on the purpose of comparing the difference between the number of riders on weekends or workdays, separating by type of rider. This plot clearly and helpfully shows that there are typically more casual riders than registered on weekends, and more registered than casual on weekdays.
+
+
+```{r}
+daily_rides %>%
+  ggplot() +
+  aes(x = date, y = rides, shape = workingday) +
+  geom_point(size = 1, alpha = 0.5) +
+  geom_smooth() +
+  facet_wrap(vars(workingday)) +
+  labs(
+    x = "Date", 
+    y = "Number of Rides",
+    shape = "Weekend or Weekday?",
+    title = "Number of Rides over Time for Weekend and Workday Riders"
+  )
+```
+
+This plot is a lot less helpful on seeing the difference in number of riders between weekends or workdays. Since the plot is already faceted by workingday, the shapes are unnecessary and difficult to see anyways. The smooth line for workdays especiialy appears to be in between two distinct parts of the data (casual and registered) and it is therefore not useful to us. Leaving the scales fixed does give us the ability to compare whether there is more riders on weekends or workdays, and the trends are overall similar, but, again, the workday part of the plot has two clear distinct smooths, one being lower and one higher. The difference in casual riders and registered is less obvious in the weekend part, but it does not matter because we cannot tell which is which based on this plot.
+
+
+## Exercise 5: How does ridership vary over a typical week?
+
+```{r}
+daily_rides %>%
+  ggplot() +
+  aes(x = day_of_week, y = rides, color = rider_type) +
+  geom_boxplot() +
+  geom_smooth() +
+  facet_wrap(vars(season), ncol = 4) +
+  labs(
+    x = "Day of Week", 
+    y = "Number of Rides",
+    color = "Type of Rider",
+    title = "Rides by Weekday and Season for Casual and Registered Riders"
+  )
+```
+
+This plot shows that there are more registered riders every single day of the week; it also shows that the registered riders tend to go up throughout the week days, and the number of casual riders goes down on the weekdays. This plot also shows us that between the four seasons, Winter clearly has the least number of riders. 
+
+
+## Exercise 6: Plot of choice
+
+```{r}
+daily_rides %>%
+  ggplot() +
+  aes(x = date, y = rides, color = weather_type) +
+  geom_point(size = 1, alpha = 0.5) +
+  geom_smooth() +
+  facet_wrap(vars(weather_type), ncol = 4) +
+  labs(
+    x = "Date", 
+    y = "Number of Rides",
+    color = "Weather Type",
+    title = "Rides over Time by Weather Type"
+  )
+```
+
+This plot is effective in showing the trends of riders between the different weather types, 1 being clear weather to 3 being snow or rain; it suggests that there is not much of a disparity for number of riders between weather type 1 and 2, but there is a clear drop off for weather type 3. Although there are clearly less cases that happen with weather type 3, it is clear that people do not ride as much when the weather is worse. 
+
+
+

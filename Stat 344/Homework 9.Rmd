@@ -1,0 +1,104 @@
+---
+title: "Stat 344 -- HW 9"
+author: "Trey Tipton"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output: 
+  pdf_document:
+    fig_height: 2.2
+    fig_width: 4
+  html_document:
+    fig_height: 2.2
+    fig_width: 4
+  word_document:
+    fig_height: 2.2
+    fig_width: 4
+---
+
+```{r, setup, include = FALSE}
+# load packages that are going to be used
+require(fastR2)   # this loads mosaic, ggformula, etc. too
+
+# Some customization.  You can alter or delete as desired (if you know what you are doing).
+
+theme_set(theme_bw())     # change theme for ggplot2/ggformula
+
+knitr::opts_chunk$set(
+  tidy = FALSE,     # display code as typed (rather than reformatted)
+  size = "small")   # slightly smaller font for code
+```
+
+
+<!-- Some macros to make mathematics easier -->
+
+\newcommand{\Prob}{\mathrm{P}}
+\newcommand{\intersect}{\;\cap\;}
+\newcommand{\union}{\operatorname{\cup}}
+\newcommand{\E}{\operatorname{E}}
+\newcommand{\Var}{\operatorname{Var}}
+\newcommand{\SD}{\operatorname{SD}}
+
+<!-- Put your work below here.  Put text in text chunks, code in R chunks. -->
+
+### Problem 6.37
+
+d.)
+```{r}
+act.model <- lm(GPA ~ ACT, data = ACTgpa)
+new_data <- data.frame(ACT = 25)
+conf_int <- predict(act.model, newdata = new_data, 
+        interval = 'confidence',
+        level = 0.95)
+conf_int
+```
+
+A 95% confidence interval for the average GPA for any students who scored 25 on the ACT is (3.17, 3.41).
+
+e.)
+```{r}
+new_data <- data.frame(ACT = 30)
+conf_int <- predict(act.model, newdata = new_data, 
+        interval = 'prediction',
+        level = 0.95)
+conf_int
+```
+
+A 95% prediction interval interval for the GPA for a student who scored 30 on the ACT is (3.10, 4.35).
+
+
+### Problem 6.43
+
+```{r}
+utilities <- Utilities
+gf_point(thermsPerDay ~ temp, data = utilities)
+```
+
+a.) We should remove the fourth observation from the data before doing the analysis for two reasons: It appears to be an outlier of our otherwise linear dataset in the scatterplot, and the notes for that day say "bad meter reading." There is only one other observation that appears to be an outlier, however, I do not see any reason to remove it because there is no notes that say it was a bad reading.
+
+```{r}
+utilities_filt <- utilities %>%
+  filter(! (temp == 41 & thermsPerDay < 1))
+```
+
+b.) The model is mostly linear, but has a slight curve that would require a x down or y down transformation. After looking at the scatterplot, moving y down (sqrt(thermsPerDay)) seemed to be the best transformation to make it look linear. It also fixed any problems with conditions, especially the ACF plot and the predictions vs. residuals plot.
+
+c.)
+```{r}
+util.model <- lm(thermsPerDay^(1/2) ~ temp, data = utilities_filt)
+
+util_model <- utilities_filt %>%
+  mutate(preds = predict(util.model), resids = resid(util.model))
+
+gf_point(thermsPerDay^(1/2) ~ temp, data = utilities_filt)%>%
+  gf_lm()
+
+gf_point(resids ~ preds, data = util_model)
+
+gf_histogram(~resids, data = util_model)
+
+s245::gf_acf(~util.model) %>%
+  gf_lims(y = c(-1, 1))
+```
+
+This model seems to pass all of the conditions. For independence conditions, the ACF is all within the limits of 1 and -1 (which it was not before the transformation). For normality of ressiduals, the histogram shows that the residuals are normally distributed. For residual variance, the predictions vs. residuals plot does not have any trends, so the model passes all of the conditions. There does not appear to be any reason for concern, and I am fairly happy with this model and the scatterplot showed that the data is a better fit for a linear model after the transformation we made.
+
+  

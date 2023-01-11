@@ -1,0 +1,234 @@
+---
+title: "Stat 344 -- HW 11"
+author: "Trey Tipton"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output: 
+  pdf_document:
+    fig_height: 2.2
+    fig_width: 4
+  html_document:
+    fig_height: 2.2
+    fig_width: 4
+  word_document:
+    fig_height: 2.2
+    fig_width: 4
+---
+
+```{r, setup, include = FALSE}
+# load packages that are going to be used
+require(fastR2)   # this loads mosaic, ggformula, etc. too
+
+# Some customization.  You can alter or delete as desired (if you know what you are doing).
+
+theme_set(theme_bw())     # change theme for ggplot2/ggformula
+
+knitr::opts_chunk$set(
+  tidy = FALSE,     # display code as typed (rather than reformatted)
+  size = "small")   # slightly smaller font for code
+```
+
+
+<!-- Some macros to make mathematics easier -->
+
+\newcommand{\Prob}{\mathrm{P}}
+\newcommand{\intersect}{\;\cap\;}
+\newcommand{\union}{\operatorname{\cup}}
+\newcommand{\E}{\operatorname{E}}
+\newcommand{\Var}{\operatorname{Var}}
+\newcommand{\SD}{\operatorname{SD}}
+
+<!-- Put your work below here.  Put text in text chunks, code in R chunks. -->
+
+### Problem 7.14
+a.)
+```{r}
+gpa.lm <- lm(gpa ~ satm + satv + act, data = GPA)
+msummary(gpa.lm)
+```
+
+We want to do model comparison that will lead to each of the p-values 1.64e-09, 0.11042, 0.01005, and 0.00707.
+```{r}
+gpa.lm1 <- lm(gpa ~ -1 + satm + satv + act, data = GPA)
+anova(gpa.lm1, gpa.lm)
+```
+
+```{r}
+gpa.lm2 <- lm(gpa ~ satv + act, data = GPA)
+anova(gpa.lm2, gpa.lm)
+```
+
+```{r}
+gpa.lm3 <- lm(gpa ~ satm + act, data = GPA)
+anova(gpa.lm3, gpa.lm)
+```
+
+```{r}
+gpa.lm4 <- lm(gpa ~ satv + satm, data = GPA)
+anova(gpa.lm4, gpa.lm)
+```  
+
+b.)
+Model Comparison Test:
+
+Hypotheses:
+
+$H_0$: $\beta_1 + \beta_2 = \beta_3$ 
+
+$H_a$: $\beta_1 + \beta_2 \neq \beta_3$
+
+where:
+
+$\Omega: E(Y) = \beta_0 + \beta_1x_{satm} + \beta_2x_{satv}$
+
+$\omega: E(Y) = \beta_0 + \beta_3x_{SAT}$
+
+Anova Test:
+```{r}
+GPA <- GPA %>%
+  mutate(SAT = satv + satm)
+
+gpa.lmboth <- lm(gpa ~ satm + satv, data = GPA)
+
+gpa.lmSAT <- lm(gpa ~ SAT, data = GPA)
+
+anova(gpa.lmSAT, gpa.lmboth)
+```
+
+p-value and conclusion: With a p-value of 0.2401, we fail to reject the null hypothesis that $\beta_1 + \beta_2 = \beta_3$. Since our p-value is high, we cannot say that there is a difference between the model with SAT as a single score and the model with the separate subscores.
+  
+c.)
+
+```{r}
+new_data <- data.frame(satv = 550, satm = 650)
+conf_int <- predict(gpa.lmboth, newdata = new_data, 
+        interval = 'confidence',
+        level = 0.95)
+conf_int
+```
+
+A 95% confidence interval for the mean GPA of students who have SATV and SATM scores of 550 and 650 respectively is (3.17607, 3.330967).
+
+d.)
+```{r}
+actSAT.lm <- lm(act ~ SAT, data = GPA)
+msummary(actSAT.lm)
+```
+
+```{r}
+GPA <- GPA %>%
+  mutate(preds = predict(actSAT.lm), resids = resid(actSAT.lm))
+
+gf_point(act ~ SAT, data = GPA) %>%
+  gf_lm()
+
+gf_point(resids ~ preds, data = GPA)
+
+gf_histogram(~resids, data = GPA)
+
+s245::gf_acf(~actSAT.lm) %>%
+  gf_lims(y = c(-1, 1))
+```
+
+Our model seems to pass the conditions with some leniency. The scatterplot shows that the relationship does appear to be linear, so it makes sense to fit a linear model. The scatterplot of residuals vs. predictions is scattered randomly so the constant residual variance condition is passed. The histogram of residuals is normal as well. The independence condition, checked by the ACF plot, appears to pass with some leniency.
+
+The linear model equation obtained from the lm():
+
+$$y_{act} = -.1040247 + 0.0224646x_{SAT} + \epsilon$$
+The best way to estimate uncertainty is to create a confidence or prediction interval.
+
+New formula using CI or PI:
+In the following code, replace "SAT = 1350" with the SAT score of your choice. If you want to predict the ACT score of a particular student based on their SAT score, change "confidence" to "prediction". If you would like to get the mean of ACT scores based on the SAT score you provided, leave it as is. You can also change the 95% confidence interval from 0.95 to a confidence level of your choice.
+
+
+```{r}
+new_data <- data.frame(SAT = 1350)
+conf_int <- predict(actSAT.lm, newdata = new_data, 
+        interval = 'confidence',
+        level = 0.95)
+conf_int
+```
+
+
+### Problem 7.25
+a.)
+```{r}
+PetStress <- PetStress
+m1 <- lm(rate ~ group, data = PetStress)
+msummary(m1)
+
+PetStress <- PetStress %>%
+  mutate(preds = predict(m1), resids = resid(m1))
+
+gf_point(rate ~ group, data = PetStress) %>%
+  gf_lm()
+
+gf_point(resids ~ preds, data = PetStress)
+
+gf_histogram(~resids, data = PetStress)
+
+s245::gf_acf(~m1) %>%
+  gf_lims(y = c(-1, 1))
+```
+
+The scatter plot of rate and group appears to be a linear trend so it makes sense to fit a linear model. The histogram of residuals is normal, so the normality of residuals condition is passed. The ACF plot shows that the model passes the independence condition. The scatter plot of residuals and predictions is randomly scattered so it passes the error variance condition. Since the model passes LINE conditions, it is appropriate to proceed with a model utility test.
+
+b.)
+Hypotheses:
+
+Null Hypothesis: $\beta_1 = 0$, The predictor group does not change anything, and the intercept only model is the same.
+
+Alternate Hypothesis: $\beta_1 \neq 0$, The predictor group has an affect on the rate, and the intercept only model is different.
+
+where:
+
+$\Omega: E(Y) = \beta_0 + \beta_1x_{group}$
+
+$\omega: E(Y) = \beta_0$
+
+```{r}
+car::Anova(m1)
+```
+
+With a low p-value of 2.092e-05, we reject the null hypothesis that the group has no affect on rate. Therefore, we have evidence to say that the intercept only model is different and the full model with group as a predictor is a good model.
+
+### Problem 7.46
+
+Backwards Step-wise Selection
+
+```{r}
+require(faraway)
+uswages <- uswages
+
+mod <- lm(wage ~ educ + exper + race + smsa + ne + mw + so + we + pt, data = uswages)
+
+car::Anova(mod)
+```
+
+From the original model, ne is zero in the Anova test, so we should remove it.
+Remove ne
+```{r}
+mod2 <- lm(wage ~ educ + exper + race + smsa + mw + so + we + pt, data = uswages)
+
+car::Anova(mod2)
+```
+
+
+Next the largest large p-value is so:
+Remove so
+```{r}
+mod3 <- lm(wage ~ educ + exper + race + smsa + mw + we + pt, data = uswages)
+car::Anova(mod3)
+```
+
+Next, the largest large p-value from the model is mw:
+Remove mw
+```{r}
+mod4 <- lm(wage ~ educ + exper + race + smsa + we + pt, data = uswages)
+car::Anova(mod4)
+```
+
+Since each predictor's p-value is small, each predictor now plays a significant role in the model.  Our final model includes educ, exper, race, smsa, we, and pt as predictors for wage.
+
+
+
+

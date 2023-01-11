@@ -1,0 +1,137 @@
+---
+title: "Lab 4.1 - Plotting with `ggplot2`"
+author: "Trey Tipton"
+date: "Fall 2022"
+output:
+  html_document:
+    code_download: true
+---
+
+This document is a record of some basic ggplot2 exercises.
+
+```{r setup, message=FALSE}
+library(tidyverse)
+library(gapminder)
+theme_set(theme_bw())
+
+# Put the data in the Environment
+gapminder <- gapminder::gapminder
+
+# Extract the data for the latest year in the dataset, for plots that don't involve year.
+gapminder_latest <- filter(gapminder, year == 2007)
+```
+
+After running the `setup` code chunk, you should have two tibbles, both listed in the "Environment" tab. Name and describe those tibbles here. You may know more about their value when 're finished with the lab, so write what you can now and come back later and fill in the details.
+
+gapminder is a tibble that contains data on GDP per capita, life expectancy, and population by country. gapminder_latest is the same dataset but only containing the rows from the year 2007.
+
+## Styling and labeling plots
+
+1. Add labels (labs) for the x and y axes. Use ?gapminder at the Console to get the data documentation if needed.
+2. Add a title (also labs).
+3. Set the color of the line to green. (Is it green now?)
+4. Set the chunk name to something more meaningful than plot-1.
+
+Finally, add a short explanation of what the visualization suggests.
+
+```{r plot-us-lifexp-over-time}
+gapminder %>% 
+  filter(country == "United States") %>% 
+  ggplot() +
+  aes(x = year, y = lifeExp) +
+  geom_line(color = 'darkgreen') +
+  labs(title = "US Life Expectancy Over Time", x = "Year", y = "Life Expectancy (years)")
+```
+
+This visualization shows that the US life expectancy has increased steadily over time.
+
+## Mapping vs Faceting
+
+In the following plot, notice that we're `filter`ing to only include rows where the `country` is in the list of `countries` that we made. This is so that we don't have `r length(unique(gapminder$country))` different colors or facets in these graphs.
+
+Imagine that you're trying to understand the life expectancy in these countries over time, and then do the following:
+
+1. Run the plot as specified. Why is it shaped like this? 
+
+The plot looks like this because there is a variety of different life expectancies and they are only reported every five years, so this is the line connecting them all.
+
+2. Map `color` to `country`. How has the plot changed?
+
+Now there is a different line for each country.
+
+3. Facet by country. Is this better than the color mapping?
+
+Personally, I find this more difficult to read than the color mapping because they are not overlayed. It is more difficult to see which slopes are higher and which life expectancies start higher or lower.
+
+4. Setting `scales = "free_y"` in the faceting function. Is this better?
+
+In some ways this is better because it is easier to see how linear each country's life expectancy over time is and where there is dips. However, it is more difficult to see the slope, which I think is the most important feature here; it is also more difficult to see which country's have the higher life expectancy because of the scale.
+
+When finished, set your plot to the most useful form given the goal stated above. Add an explanation of what the visualization suggests.
+
+```{r plot-lifeexp-faceted-by-country}
+countries <- c(
+  "China", "India", "United States",
+  "Indonesia", "Brazil", "Pakistan",
+  "Bangladesh", "Nigeria", "Japan")
+
+gapminder %>% 
+  filter(country %in% countries) %>% 
+  ggplot() +
+  facet_wrap(~country) +
+  aes(x = year, y = lifeExp, color = country) +
+  geom_line()
+```
+
+This visualization suggests that Japan has consistently had the highest life expectancy while Indonesia has made the largest jump over time. It also shows that Nigeria has had the smallest life expectancy and a small leap. China had a dip in life expectancy, but still ended up fairly high in relation to toher countries, and how they began.
+
+## Univariate analysis --- Continuous
+
+Pick one of the continuous variables and pose a question you'd like to answer. Then, make a plot that shows its distribution and help answer your question. 
+
+What is the distribution if GDP Per Capita for all of the countries in year 2007 from the gapminder dataset?
+
+```{r plot-histogram-gdp}
+gapminder_latest %>% 
+  ggplot(aes(x = gdpPercap)) +
+  geom_histogram(binwidth = 1000) +
+  labs(x = "GDP Per Capita in 2007", title = "GDP Histogram 2007")
+```
+
+The distribution of GDP in 2007 is unimodal and positively skewed. Most countries have a GDP under 20000, but there are a number of countries with very high GDP.
+
+
+## Univariate Analysis --- Categorical
+
+Imagine that you'd like to know Which continent has the most countries? Compose a plot that helps to answer this question. (Use `gapminder_latest`, which has one row per country.)
+
+```{r plot-continent-countries}
+gapminder_latest %>% 
+  ggplot(aes(x = continent)) +
+  geom_bar() +
+  labs(x = "Continents", y = "Number of Countries")
+```
+
+This plot shows that Africa has the most countries in the gapminder dataset.
+
+## Bivariate Analysis --- Numerical/Categorical
+
+Pick one of the continuous variables and set a question you'd like to answer about that variable with respect to the continents. If possible, choose a variable you haven't chosen before. Compose a plot that helps you answer your question.
+
+Include your plot and a description of what it suggests with respect to your initial question.
+
+Which continent has the largest and smallest population in 2007?
+
+```{r}
+gapminder_latest %>% 
+  ggplot(aes(x = continent, y = pop)) +
+  geom_col() +
+  labs(x = "Continents", y = "Population", title = "Cumulative Population of Listed Countries by Continent")
+```
+
+Asia has the largest cumulative population of the continents, and Oceania has the smallest.
+
+
+
+
+

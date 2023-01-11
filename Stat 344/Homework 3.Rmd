@@ -1,0 +1,108 @@
+---
+title: "Stat 344 -- HW 3"
+author: "Trey Tipton"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output: 
+  pdf_document:
+    fig_height: 2.2
+    fig_width: 4
+  html_document:
+    fig_height: 2.2
+    fig_width: 4
+  word_document:
+    fig_height: 2.2
+    fig_width: 4
+---
+
+```{r, setup, include = FALSE}
+# load packages that are going to be used
+require(fastR2)   # this loads mosaic, ggformula, etc. too
+
+# Some customization.  You can alter or delete as desired (if you know what you are doing).
+
+theme_set(theme_bw())     # change theme for ggplot2/ggformula
+
+knitr::opts_chunk$set(
+  tidy = FALSE,     # display code as typed (rather than reformatted)
+  size = "small")   # slightly smaller font for code
+```
+
+
+<!-- Some macros to make mathematics easier -->
+
+\newcommand{\Prob}{\mathrm{P}}
+\newcommand{\intersect}{\;\cap\;}
+\newcommand{\union}{\operatorname{\cup}}
+\newcommand{\E}{\operatorname{E}}
+\newcommand{\Var}{\operatorname{Var}}
+\newcommand{\SD}{\operatorname{SD}}
+
+<!-- Put your work below here.  Put text in text chunks, code in R chunks. -->
+
+### Problem 5.24
+a.) The likelihood ratio test statistic is $\lambda$ = $L(0)$/$L(\hat{\theta})$
+see paper work
+
+b and c.)
+```{r}
+x <- c(.64, .92, .73, .96, .98, .33, .8, .96, .81, .76, 
+       .98, .75, .87, .82, .44, .96, .61, .32, .67, .98, 
+       .96, .88, .85, 1.0, .86, .88, .8, .83, .64, .5)
+
+n <- length(x)
+theta_hat <- (-n/(sum(log(x)))) -1
+theta_hat
+
+lambda <- 1/(prod((theta_hat +1)*(x^(theta_hat))))
+lambda
+w_test <- -2*(log(lambda))
+w_test
+## w should equal w_test 
+w <- 2*(30*log(theta_hat + 1) + theta_hat*sum(log(x)))
+w
+1 - pchisq(w, 1)
+```
+d.)
+```{r}
+W <- function(x, theta_0 = 0){ 
+n <- length(x)
+theta_hat <- (-n/(sum(log(x))) - 1)
+2*(30*log(theta_hat + 1) + theta_hat*sum(log(x)))
+}
+
+rand_data <- do(1000)*runif(30, 0, 1)
+
+statTally(sample = x, rdata = rand_data, FUN = W)
+```
+Our p-value for 1000 replications is 7.23e-12
+
+e.) Both of the p-values are very small, leading us to the conclusion that we should reject the nully hypothesis that $\hat{\theta}$=0.
+
+
+### Problem 5.30
+
+a.) on paper, $\hat{\theta}_{MLE}$=0.325
+
+b.)
+```{r}
+w <- -2 * ((1997*log(.25*(2+.05)) + 906*log(.25*(1-.05)) + 904*log(.25*(1-.05)) + 32*log(.25*(.05))) - (1997*log(.25*(2+.0325)) + 906*log(.25*(1-.0325)) + 904*log(.25*(1-.0325)) + 32*log(.25*(.0325))))
+w
+pval <- 1 - pchisq(w,1)
+pval
+```
+
+c.)
+```{r}
+w <- -2 * ((1997*log(.25*(2+.03)) + 906*log(.25*(1-.03)) + 904*log(.25*(1-.03)) + 32*log(.25*(.03))) - (1997*log(.25*(2+.0325)) + 906*log(.25*(1-.0325)) + 904*log(.25*(1-.0325)) + 32*log(.25*(.0325))))
+w
+pval <- 1 - pchisq(w,1)
+pval
+```
+d.)
+```{r}
+w <- -2 * ((1997*log(.25*(2+.07)) + 906*log(.25*(1-.07)) + 904*log(.25*(1-.07)) + 32*log(.25*(.07))) - (1997*log(.25*(2+.0325)) + 906*log(.25*(1-.0325)) + 904*log(.25*(1-.0325)) + 32*log(.25*(.0325))))
+w
+pval <- 1 - pchisq(w,1)
+pval
+```
+explanations for b-d on paper

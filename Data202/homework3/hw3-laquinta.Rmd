@@ -1,0 +1,145 @@
+---
+title: "DATA 202 Homework 3"
+author: "Trey Tipton"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_download: true
+---
+
+```{r setup, include=FALSE}
+# Set some useful chunk options for code chunks.
+knitr::opts_chunk$set(
+  echo = TRUE,
+  error = TRUE,    # display errors but keep going.
+  comment = "",    # don't add '##' characters before output.
+  message = FALSE  # don't include messages in the knitted output (check them in RStudio)
+  )
+library(tidyverse)
+theme_set(theme_bw())
+```
+
+## The Purpose
+
+Our goal is to continue our consideration of the validity of the claim and La Quinta Hotels are often next to Denny’s restaurants.
+
+## Loading Data
+
+```{r}
+dennys <- read_rds("data/dennys.rds")
+laquinta <- read_rds("data/laquinta.rds")
+states <- read_csv("data/states.csv", col_types = cols(
+  name = col_character(),
+  abbreviation = col_character(),
+  area = col_double()
+))
+```
+
+
+## Exercises
+
+1. Let's filter the Denny's dataset for only Alaska locations:
+
+```{r}
+dn_ak <- dennys %>%
+  filter(state == 'AK')
+```
+
+There are three Denny's locations in Alaska.
+
+2. Now, let's do the same with the La Quinta dataset, and then compare.
+
+```{r}
+lq_ak <- laquinta %>%
+  filter(state == 'AK')
+```
+
+There are only two La Quinta locations in Alaska.
+
+3. How many pairings are there between all Denny’s and all La Quinta locations in Alaska, i.e. how many distances do we need to calculate between the locations of these establishments in Alaska?
+
+There are 6 pairings between all of the Denny's and La Quinta locations in Alaska that we need to calculate the distance of.
+
+Let's merge (join) the datasets in order to compute the distance between each of the locations.
+
+```{r}
+dn_lq_ak <- full_join(lq_ak, dn_ak, by = 'state', suffix = c('_lq', '_dn'))
+```
+
+4. There are 6 observations in the dn_lq_ak dataframe; the names and variables are the same as the dn_ak and lq_ak dataframes, but with the exception of the states variable, there are two of each variable name, one with _lq after (for La Quinta) and the other with _dn after them (for Denny's).
+
+5.
+ Let's create a function to compute the distance between locations, then create a distance variable. 
+ 
+```{r}
+# Great-circle distance, Implementation from dsbox
+haversine <- function(long1, lat1, long2, lat2) {
+  # convert to radians
+  long1 = long1 * pi / 180
+  lat1  = lat1  * pi / 180
+  long2 = long2 * pi / 180
+  lat2  = lat2  * pi / 180
+  
+  # Earth mean radius in km (WGS84 ellipsoid)
+  R = 6371.009
+  
+  # Compute the distance in km
+  a = sin((lat2 - lat1)/2)^2 + cos(lat1) * cos(lat2) * sin((long2 - long1)/2)^2
+  d = R * 2 * asin(sqrt(a))
+  return(d)
+}
+
+dn_lq_ak <- dn_lq_ak %>% 
+  mutate(distance = haversine(longitude_lq, latitude_lq, longitude_dn, latitude_dn))
+```
+
+6.
+Let's sort for only the nearest Denny's location's distance between each La Quinta location in Alaska.
+
+```{r}
+nearest <- dn_lq_ak %>% 
+  group_by(address_lq) %>% 
+  summarise(distance = min(distance))
+
+head(nearest)
+```
+
+7. It does not seem that there are any La Quinta locations next to Denny's in Alaska. The nearest are 2 and 5.2 km away, which is not enough for me to say that they are "next" to each other. From the previous lab, we learned that there are many La Quinta locations  and Denny's location with the opposite nowhere near them.
+
+## Colorado Analysis
+
+8. Let's do the same analysis, but for my home state, Colorado.
+
+```{r}
+dn_co <- dennys %>%
+  filter(state == 'CO')
+
+lq_co <- laquinta %>%
+  filter(state == 'CO')
+
+dn_lq_co <- full_join(lq_co, dn_co, by = 'state', suffix = c('_lq', '_dn'))
+
+dn_lq_co <- dn_lq_co %>% 
+  mutate(distance = haversine(longitude_lq, latitude_lq, longitude_dn, latitude_dn))
+
+nearest_co <- dn_lq_co %>% 
+  group_by(address_lq) %>% 
+  summarise(distance = min(distance))
+
+nearest_co %>% 
+  count(distance, sort = TRUE)
+```
+
+There are 29 Denny's locations and 27 La Quinta locations in Colorado. This means there are 783 observations of distance combinations. After we sort, we get a list of the distances of each La Quinta locations to the nearest Denny's location.
+
+In Colorado, we have seven La Quinta locations within a kilometer of Denny's locations. With that said, I still do not see any evidence that La quinta establishments and Denny's are next to each other hand in hand.
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,132 @@
+---
+title: "DATA 202 Homework 5"
+author: "Trey Tipton"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_download: true
+---
+
+```{r setup, include=FALSE}
+# Set some useful chunk options for code chunks.
+knitr::opts_chunk$set(
+  echo = TRUE,
+  error = TRUE,    # display errors but keep going.
+  comment = "",    # don't add '##' characters before output.
+  message = FALSE  # don't include messages in the knitted output (check them in RStudio)
+  )
+library(tidyverse)
+library(tidymodels)
+library(mosaic)
+library(broom)
+theme_set(theme_bw())
+```
+
+## Exercise 1
+
+What we're doing here is ...
+
+```{r}
+gestation_no_missing <- mosaicData::Gestation %>% filter(!is.na(age))
+gestation_no_missing %>% summarize(mean(age))
+```
+
+A colleague sees this result and says, “Ah, so people give birth when they’re around 27 years old.”
+
+A flaw in the colleague's statement is that this result gives us the mean of the sample which is the average and does not represent all people in the sample. Another flaw is that the data comes from the 1960s so this does not represent all people. In general, this is just a sample and not the population, so it is not exactly accurate to make statements like this when it is not all people.
+
+## Exercise 2 
+
+The following code correctly uses bootstrap resampling to compute a 95% confidence interval for the mean.
+
+```{r}
+mosaic::set.rseed(123)
+bootstrap <-
+  mosaic::do(1000) * {
+    gestation_no_missing %>% 
+      mosaic::resample() %>% 
+      summarize(mean_age = mean(age))
+  }
+ci_stats <- mosaic::cdata(~ mean_age, data = bootstrap, p = 0.95)
+ci_stats
+```
+
+Now we plot a histogram of the data, and overlay the confidence interval that we just computed as two vertical bars.
+
+```{r}
+ggplot(gestation_no_missing, aes(x = age)) + geom_histogram(binwidth = 1.0) +
+  geom_vline(xintercept = ci_stats$lower, color = "red") +
+  geom_vline(xintercept = ci_stats$upper, color = "red")
+```
+
+A colleague is puzzled: why is most of the data outside of the confidence interval? 
+
+This confidence interval is for the mean, not the population, so it makes sense that it would be small, covering a small portion of the data. The sample is very large, which is more likely to give us a small confidence interval, and here, assuming a simple random sample, we are 95% confident that the mean of the population is contained within that interval.
+
+## Exercise 3 
+
+A. Make a plot showing birth weight (wt, in ounces) as a function of gestation duration (gestation, in days). 
+
+```{r}
+gestation_no_missing %>% 
+  ggplot(aes(x = gestation, y = wt)) +
+  geom_point() +
+  labs(x = 'Gestation Duration (Days)', y = 'Birth Weight')
+```
+
+
+B. Fit a linear model to predict birth weight from gestation duration (using the full dataset). Write out (by hand, not using equatiomatic or the like) the equation that the fitted model uses to compute a prediction. Use that equation to calculate (using a calculator, not code) the model’s prediction for when the gestation duration is 250 days.
+
+```{r}
+model <- lm(wt ~ gestation, data = gestation_no_missing)
+
+model
+```
+
+Here is the equation for the fitted linear model of gestation duration predicting birth weight:
+
+$$wt = 0.4643*gestation - 10.0714$$
+
+The model's prediction for a gestation  duration of 250 days is a birth weight of 106.0036 lbs.
+
+C. The following code reports a 95% confidence interval for the parameters of the model. Explain the confidence interval for the gestation coefficient to a colleague unfamiliar with confidence intervals. 
+
+```{r}
+model %>% 
+  tidy(conf.int = TRUE) %>% 
+  select(term, estimate, conf.low, conf.high)
+```
+
+If given a random sample from the population, we are 95% confident that the parameters of a linear model predicting birth weight based on gestation duration would fall within these ranges. For the intercept of this model , this interval is (-26.414, 6.272), and for the coefficient it is (0.406, 0.523).
+
+D. Repeat parts A, B, and C, but instead for predicting birth weight from the mother’s age. (The model is wt ~ age. For B, just write the equation; you don’t need to give an example prediction.) When explaining the confidence interval, explain in particular what the confidence interval for the age coefficient tells us about the relationship of age and birth weight in this data. 
+
+```{r}
+gestation_no_missing %>% 
+  ggplot(aes(x = age, y = wt)) +
+  geom_point() +
+  labs(x = 'Gestation Duration (Days)', y = 'Birth Weight')
+```
+
+```{r}
+model2 <- lm(wt ~ age, data = gestation_no_missing)
+
+model2
+```
+
+Here is the equation for the fitted linear model of age predicting birth weight:
+
+$$wt = 0.10623*age + 116.6835$$
+
+```{r}
+model2 %>% 
+  tidy(conf.int = TRUE) %>% 
+  select(term, estimate, conf.low, conf.high)
+```
+
+If given a random sample from the population, we are 95% confident that the intercept of the linear model predicting birth weight based on age would fall within the interval (111.77, 121.6). For the coefficient, the interval is (-0.07, 0.283) which tells us that we can not be confident that there is non-horizontal relationship between birth weight and age. In other words, we do not have enough evidence to say that there is a strong linear relationship between birth weight and age.
+
+
+https://medium.com/@junglemanjungleman/could-machine-learning-predict-a-lottery-result-or-not-453e697a3b5e
+
+https://www.kaggle.com/datasets/stetsondone/lottery-data-winning-numbers-and-jackpots

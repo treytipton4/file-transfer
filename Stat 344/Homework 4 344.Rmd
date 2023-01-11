@@ -1,0 +1,155 @@
+---
+title: "Stat 344 -- HW 4"
+author: "Trey Tipton"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output: 
+  pdf_document:
+    fig_height: 2.2
+    fig_width: 4
+  html_document:
+    fig_height: 2.2
+    fig_width: 4
+  word_document:
+    fig_height: 2.2
+    fig_width: 4
+---
+
+```{r, setup, include = FALSE}
+# load packages that are going to be used
+require(fastR2)   # this loads mosaic, ggformula, etc. too
+
+# Some customization.  You can alter or delete as desired (if you know what you are doing).
+
+theme_set(theme_bw())     # change theme for ggplot2/ggformula
+
+knitr::opts_chunk$set(
+  tidy = FALSE,     # display code as typed (rather than reformatted)
+  size = "small")   # slightly smaller font for code
+library(maxLik)
+```
+
+
+<!-- Some macros to make mathematics easier -->
+
+\newcommand{\Prob}{\mathrm{P}}
+\newcommand{\intersect}{\;\cap\;}
+\newcommand{\union}{\operatorname{\cup}}
+\newcommand{\E}{\operatorname{E}}
+\newcommand{\Var}{\operatorname{Var}}
+\newcommand{\SD}{\operatorname{SD}}
+
+<!-- Put your work below here.  Put text in text chunks, code in R chunks. -->
+### Book Problem 5.18
+Wald:
+```{r}
+odds <- 35/20
+stat <- log(odds)
+stat - 1.96*sqrt((stat*(1-stat))/55)
+stat + 1.96*sqrt((stat*(1-stat))/55)
+
+```
+The confidence interval for the log of the odds ratio is (0.428, 0.691)
+
+LR:
+```{r}
+loglik_binom <- function(theta, x, n){
+  x * log(theta / (1 + theta)) + (n - x) * log(1/ (1 + theta))
+}
+mle_binom <- maxLik(loglik_binom, start = (odds = 1), x = 35, n = 55)
+coef(mle_binom)
+
+pb <- function(theta0){
+  2 * (loglik_binom(odds, 35, 55) - loglik_binom(theta0, 35, 55)) - qchisq(0.95, df = 1)
+}
+lo <-uniroot(pb, c(0, odds))%>%
+  value()
+hi <- uniroot(pb, c(odds, 100))%>%
+  value()
+
+c(lo, hi) / (1 + c(lo, hi))
+```
+The 95% confidence interval is (0.447, 0.801)
+
+
+### Problem 1
+
+```{r}
+gapmind <- read.csv('https://sldr.netlify.app/data/gapminder_clean.csv')%>%
+  mutate(income = ifelse(income == 0, 0.0000000001, income))
+
+Lexp <- function(theta, x){
+  lambda <- theta[1]
+  if (lambda < 0) return(NA)
+  dexp(x, rate = lambda, log = TRUE)
+}
+
+mle <- maxLik(Lexp, start = c(lambda = 1/1000), x = gapmind$income)
+mle
+```
+
+$\hat{\lambda_{MLE}} = 0.0001646$
+
+
+### Problem 2
+Wald:
+```{r}
+0.0001646 - 1.96*(0.0001646/sqrt(length(gapmind$income)))
+0.0001646 + 1.96*(0.0001646/sqrt(length(gapmind$income)))
+```
+The 95% confidence interval is (0.0001595, 0.0001697)
+
+LR:
+```{r}
+income <- gapmind$income
+loglik <- function(theta, n=length(income)){
+  length(income) * log(theta) - theta * sum(income)
+}
+p <- function(t0){
+  stat <- 2*(loglik(coef(mle)) - loglik(t0))
+  1 - pchisq(stat, df = 1)
+}
+uniroot(function(t){p(t)-0.05}, c(0, coef(mle))) %>%
+  value()
+uniroot(function(t){p(t)-0.05}, c(10, coef(mle))) %>%
+  value()
+
+```
+The 95% confidence interval is (6.1e-05, 0.000237)
+
+
+The 95% confidence interval through the likelihood ratio is much wider and is not symmetric like the Wald.
+
+
+### Problem 3
+Hypotheses:
+$H_0$: $\Omega$ = $\Omega_0$
+$H_a$: $\Omega$ = $\Omega_1$
+where $\theta$ = <alpha, lambda>
+$\Omega_0$ = {$\theta$ | alpha = 1}
+$\Omega_1$ = {$\theta$}
+
+Test Stat:
+```{r}
+ll_gamma <- function(theta, x){
+  alpha <- theta[1]
+  lambda <- theta[2]
+  if (alpha < 0) return(NA)
+  if (lambda < 0) return(NA)
+  sum(log(dgamma(x, shape = alpha, rate = lambda)))
+}
+
+gamma <- maxLik(logLik = ll_gamma, start = c(alpha = 1, lambda = .0001), x = income)
+
+
+exp <- maxLik(logLik = ll_gamma, start = c(alpha = 1, lambda = .0001), fixed = 1, x = income)
+
+gamma
+exp
+
+
+w <- 2*(-38162.53 - -38282.38)
+1 - pchisq(w, 1)
+```
+P-value and conclusion:
+
+With a p-value of 0 we reject the null hypothesis that an exponential is the best fit. This means we have enough evidence to say that two paramters is a better fit and gamma is better.

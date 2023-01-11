@@ -1,0 +1,22 @@
+---
+title: "Lab 3.1 - Visualization Analysis"
+author: "Trey Tipton"
+date: "Fall 2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This document presents an analysis of an existing data visualization.
+
+## Analyzing Wikipedia's US Federal Budget Visualization
+
+Wikipedia provides a visualization of the [US Federal budget](https://en.wikipedia.org/wiki/United_States_federal_budget) each year. Here's this year's budget:
+
+[![2020 US Federal Budget (Wikipedia)](https://cs.calvin.edu/courses/info/601/resources/images/2020_US_Federal_Budget_Infographic.png)](https://upload.wikimedia.org/wikipedia/commons/f/fb/2020_US_Federal_Budget_Infographic.png)
+
+To understand this visualization of the US Federal Budget, we must first understand the audience it is intended for. The audience is any US resident who seeks to know how much money the Federal government spent. This leads us to the question: how effective is this visualization at communicating that budget to US residents? The pie chart is not the best way to communicate compared percentages; a bar graph would be better to compare how much money was put into each sector.
+
+The visualization fails to follow general design principles, and the creators of this chart should look at Yau's taxonomy. First of all, the use of pie charts does not follow general design principles. The visualization also does not have a uniform pattern, as their are different fonts and font sizes for each of the sectors. The color scheme is confusing because it does not change between each sector equally, i.e. why is there gray on both sides? The numbers all around and in the middle of the visualization make it difficult to read. Overall, people would be able to interpret the data better if it were a bar graph and other changes were made, so this visualization is not that effective at conveying the information that it attempts to.
